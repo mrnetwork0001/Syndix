@@ -37,7 +37,7 @@ Deployed and verified working — a reader claim has settled end to end on chain
 | Contract | Address |
 | --- | --- |
 | `SyndixTreasury` | [`0x5465f31a6155E3eCCcC35f4E5bDC0e287763B0ee`](https://sepolia-explorer.giwa.io/address/0x5465f31a6155E3eCCcC35f4E5bDC0e287763B0ee) |
-| `SyndixArticleNFT` | [`0x6165bEa60EE395F8A663026b40BD2dCDb2Ca23cD`](https://sepolia-explorer.giwa.io/address/0x6165bEa60EE395F8A663026b40BD2dCDb2Ca23cD) |
+| `SyndixArticleNFT` | [`0xA0D49A6C4Ac081a2de9af2f422EdfffB8f41190e`](https://sepolia-explorer.giwa.io/address/0xA0D49A6C4Ac081a2de9af2f422EdfffB8f41190e) |
 | `MockUpIdRegistry` | [`0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d`](https://sepolia-explorer.giwa.io/address/0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d) |
 
 Six issues are published on chain with funded reward pools. The first real
@@ -95,7 +95,7 @@ NEXT_PUBLIC_SYNDIX_TREASURY=... # after deploying, the app reads live chain stat
 ### Contracts
 
 ```bash
-npm run contracts:test     # 33 tests
+npm run contracts:test     # 34 tests
 npm run contracts:deploy   # to GIWA Sepolia
 npm run abi                # regenerate lib/abi.ts from the artifacts
 ```
@@ -144,7 +144,7 @@ than a gas decision.
 
 ```
 forge test
-  33 tests passed, 0 failed
+  34 tests passed, 0 failed
 ```
 
 ---
@@ -155,7 +155,7 @@ Stated plainly, because a grant reviewer should not have to guess:
 
 | Component | Status |
 | --- | --- |
-| Smart contracts | **Real.** Compile under Solidity 0.8.24, 33 passing Foundry tests including a fuzzed solvency invariant. Deployable to GIWA Sepolia with one command. |
+| Smart contracts | **Real.** Compile under Solidity 0.8.24, 34 passing Foundry tests including a fuzzed solvency invariant. Deployable to GIWA Sepolia with one command. |
 | GIWA chain reads | **Real.** The ingestion agent queries live head state and gas price from the Flashblocks RPC on every run; those block numbers are verifiable on the explorer. |
 | AI issue generation | **Real when `ANTHROPIC_API_KEY` is set** — `claude-opus-5`, streamed, schema-constrained. Otherwise a recorded pipeline replays and the studio badges itself "Simulated". |
 | x402 endpoint | **Real protocol, real verification when deployed.** With a treasury address set it verifies settlement on-chain; without one it accepts a well-formed hash and returns `verification: "accepted-unverified"`. |

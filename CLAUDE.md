@@ -33,7 +33,7 @@ npm run dev               # Next dev server
 npm run build             # production build
 npm run typecheck         # tsc --noEmit
 npm run lint              # eslint (build fails on unused vars/imports)
-npm run contracts:test    # forge test  (33 tests)
+npm run contracts:test    # forge test  (34 tests)
 npm run contracts:deploy  # forge script Deploy --rpc-url giwa_sepolia --broadcast
 npm run abi               # regenerate lib/abi.ts from forge artifacts
 npm run check             # typecheck + lint + build + contracts:test
@@ -123,7 +123,7 @@ smart accounts.
 
 ```
 SyndixTreasury    0x5465f31a6155E3eCCcC35f4E5bDC0e287763B0ee
-SyndixArticleNFT  0x6165bEa60EE395F8A663026b40BD2dCDb2Ca23cD
+SyndixArticleNFT  0xA0D49A6C4Ac081a2de9af2f422EdfffB8f41190e
 MockUpIdRegistry  0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d
 ```
 

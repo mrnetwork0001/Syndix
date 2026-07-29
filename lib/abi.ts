@@ -1,8 +1,8 @@
 /**
- * Auto-generated from `forge build` artifacts — do not hand-edit.
+ * Auto-generated from \`forge build\` artifacts — do not hand-edit.
  * Regenerate with: npm run abi
  *
- * Exported `as const` so viem/wagmi infer argument and return types
+ * Exported \`as const\` so viem/wagmi infer argument and return types
  * directly from the ABI at the call site.
  */
 
@@ -1968,6 +1968,11 @@ export const syndixArticleNFTAbi = [
   {
     "type": "error",
     "name": "EditionSoldOut",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "EmptyMetadataURI",
     "inputs": []
   },
   {

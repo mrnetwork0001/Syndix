@@ -64,6 +64,7 @@ contract SyndixArticleNFT is ERC721, Ownable, ReentrancyGuard {
 
     error EditionExists();
     error EditionMissing();
+    error EmptyMetadataURI();
     error EditionClosed();
     error EditionNotOpenYet();
     error EditionSoldOut();
@@ -91,6 +92,11 @@ contract SyndixArticleNFT is ERC721, Ownable, ReentrancyGuard {
         uint32 maxSupply,
         uint64 opensAt
     ) external onlyOwner {
+        // An empty URI is silently corrupting: `metadataURI.length == 0` is also
+        // how this contract represents "no edition", so an empty write both
+        // mints unusable tokens and leaves the slot re-registerable. There is no
+        // setter for metadataURI by design, so it must be right on first write.
+        if (bytes(metadataURI).length == 0) revert EmptyMetadataURI();
         if (bytes(editions[issueId].metadataURI).length != 0) revert EditionExists();
 
         editions[issueId] = Edition({

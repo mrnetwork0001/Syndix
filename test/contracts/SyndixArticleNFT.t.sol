@@ -142,6 +142,24 @@ contract SyndixArticleNFTTest is Test {
         nft.registerEdition(ISSUE_ID, URI, 0, 0, 0);
     }
 
+    /**
+     * @notice Regression: an empty URI used to be accepted.
+     * @dev The contract encodes "no edition" as a zero-length metadataURI, so an
+     *      empty write produced an edition that minted tokens with a blank
+     *      tokenURI while still reading as unregistered. Found in production
+     *      after a shell off-by-one registered edition 1 with "".
+     */
+    function test_RegisterEditionRejectsEmptyURI() public {
+        vm.prank(owner);
+        vm.expectRevert(SyndixArticleNFT.EmptyMetadataURI.selector);
+        nft.registerEdition(ISSUE_ID, "", 0, 0, 0);
+
+        // And the slot really is untouched, rather than half-written.
+        vm.prank(reader);
+        vm.expectRevert(SyndixArticleNFT.EditionMissing.selector);
+        nft.collect(ISSUE_ID);
+    }
+
     function test_RegisterEditionOnlyOwner() public {
         vm.prank(reader);
         vm.expectRevert();
