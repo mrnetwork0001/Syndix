@@ -4,11 +4,8 @@ import { GIWA_EXPLORER, GIWA_SEPOLIA_ID, IS_LIVE_CHAIN } from "@/lib/giwa";
 
 const GITHUB_URL = "https://github.com/mrnetwork0001/Syndix";
 
-/**
- * Syndix has no X account yet. Set this to the real handle to show the icon —
- * pointing it at someone else's account would misrepresent the project.
- */
-const X_URL: string | null = null;
+/** Set to null to hide the icon rather than pointing it at another account. */
+const X_URL: string | null = "https://x.com/Syndix";
 
 interface FooterLink {
   href: string;
