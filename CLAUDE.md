@@ -58,7 +58,9 @@ app/
   studio/page.tsx             AI agent studio
   api/agent/run/route.ts      NDJSON pipeline stream (live claude-opus-5, or simulated)
   api/x402/feed/route.ts      HTTP 402 machine-payable alpha feed
+  api/attest/route.ts         EIP-712 ReadProof signer (the claim gate)
   api/stats/route.ts          protocol stats
+  protocol/page.tsx           the argument, with numbers read live from chain
   globals.css                 THE design system — all tokens and utilities
 components/{ui,shell,feed,reader,studio,analytics}/
 lib/
@@ -68,6 +70,9 @@ lib/
   wagmi.ts    wagmi config + flashblocks transport
   abi.ts      GENERATED — edit contracts and run `npm run abi`
   x402.ts     402 challenge construction + on-chain payment verification
+  attest.ts   EIP-712 domain/types — must match SyndixTreasury byte for byte
+  onchain.ts  dataset issue id <-> on-chain article id mapping
+  chain-stats.ts  live treasury reads; returns a live|offline union
   data/       the editorial dataset (issues, protocol stats, agent run script)
 contracts/    SyndixTreasury.sol, SyndixArticleNFT.sol, mocks/, interfaces/
 test/contracts/  Foundry tests
@@ -114,11 +119,38 @@ No emoji in the UI — use lucide icons.
 Use `.call{value:}` for ETH transfers, never `.transfer` — recipients may be Safes or 4337
 smart accounts.
 
+## Deployed on GIWA Sepolia
+
+```
+SyndixTreasury    0x5465f31a6155E3eCCcC35f4E5bDC0e287763B0ee
+SyndixArticleNFT  0x6165bEa60EE395F8A663026b40BD2dCDb2Ca23cD
+MockUpIdRegistry  0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d
+```
+
+Six issues are published with funded pools and real reader claims settle. Addresses come
+from `.env.local` (`NEXT_PUBLIC_SYNDIX_*`); with them unset the app falls back to the
+dataset and says so.
+
+**On-chain article ids are not dataset issue ids.** `publishArticle` assigns ids from
+publish order, and a nonce race during the first deploy left issues 2 and 3 swapped.
+`lib/onchain.ts` holds the mapping and returns `undefined` for unpublished issues — never
+default to the issue id, that signs an attestation for the wrong article.
+
 ## Honesty rule
 
-The app ships without deployed contracts and usually without an LLM key. **Anywhere the UI
-shows simulated data it must say so** — the studio badges its run mode, the claim modal is
-explicitly marked simulated, `/api/stats` reports `source: "simulated"`, and x402 labels
-unverified settlement as `accepted-unverified`. Never render a fabricated tx hash as a
-confirmed on-chain fact. This is a grant submission; a smaller honest demo beats an
-overclaiming one.
+**Anywhere the UI shows data that is not what it claims to be, it must say so.** This is a
+grant submission; a smaller honest demo beats an overclaiming one.
+
+Currently real: contracts, reader claims, chain reads, x402 settlement verification.
+Currently not: the 14-day analytics series (authored — no indexer exists), ERC-4337
+gasless (readers pay their own gas), IPFS pinning (CIDs do not resolve).
+
+Concrete rules:
+- Never render a fabricated tx hash as a confirmed on-chain fact. The dataset's
+  `mintTxHash` values are now genuine publish transactions; if you regenerate the dataset,
+  either use real hashes or badge them.
+- Chain reads use a discriminated union (`lib/chain-stats.ts`). When GIWA is unreachable,
+  state the reason — do **not** silently substitute the dataset behind a "Live" badge.
+- The studio badges its run mode; `/api/stats` reports `source`; x402 labels unverified
+  settlement `accepted-unverified`.
+- `/protocol` carries the honesty table and must be updated when any of this changes.

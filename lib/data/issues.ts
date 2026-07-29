@@ -679,8 +679,8 @@ export const ISSUES: Issue[] = [
     claimedCount: 704,
     readerCount: 862,
     mintTxHash:
-      "0x18e738d79918dab34d85ed13794b602a9a087e11f34eb4a498710fe1d5df4067",
-    mintBlock: 28944712,
+      "0x1691ecd249eeb75f38e2b457a8dc1e3d457d96bcf9936e8d4804143205baa6f0",
+    mintBlock: 31963625,
     generation: {
       model: "claude-opus-5",
       imageModel: "syndix-diffusion-v2",
@@ -706,9 +706,12 @@ export const ISSUES: Issue[] = [
     standfirst:
       "HTTP 402 turns an agent into a customer. The settlement layer decides whether that customer is viable — and the identity layer decides whether it is one customer or ten thousand copies of one script.",
     track: "ai-web3-alpha",
-    status: "minting",
+    status: "published",
     publishedAt: "2026-07-28T22:10:00.000Z",
     readingMinutes: 5,
+    mintTxHash:
+      "0x42933d3693320375086585ed8dc32e20aaf22294258a87353dd188608a3dc00e",
+    mintBlock: 31963622,
     contentURI:
       "ipfs://bafybeiqajfanp7r2yxxohdqixrrbbttbstknq7rvzdfutqt3awqrqvthgm",
     coverSeed: "x402-machine-buyers-0728",
@@ -868,8 +871,8 @@ export const ISSUES: Issue[] = [
     claimedCount: 1141,
     readerCount: 1287,
     mintTxHash:
-      "0xf27318adffeed09a975391068f27dca69a2ffb19ce5e7fa0e209dc75e3f18311",
-    mintBlock: 28513004,
+      "0x9a592bbfb89b6ff7467f89cf8111511f14a37f997c0c570b7a6fe1ca52dfad8e",
+    mintBlock: 31963619,
     generation: {
       model: "claude-opus-5",
       imageModel: "syndix-diffusion-v2",
@@ -963,8 +966,8 @@ export const ISSUES: Issue[] = [
     claimedCount: 1176,
     readerCount: 1342,
     mintTxHash:
-      "0xbd020f5fc7ae40340741d71f0c82e1ac5a1279f014864f81d3006f296933ee58",
-    mintBlock: 28167486,
+      "0xaa614edbd2a9f3e2cb2ea899c1182e63f4245432a520eaf5b311ddc0b5531a7d",
+    mintBlock: 31963537,
     generation: {
       model: "claude-opus-5",
       imageModel: "syndix-diffusion-v2",
@@ -1058,8 +1061,8 @@ export const ISSUES: Issue[] = [
     claimedCount: 1188,
     readerCount: 1394,
     mintTxHash:
-      "0x2718f34d077ef67bcebc0e90e3c57fe7c3b8c30eaa4b64a95ff848680ac2f450",
-    mintBlock: 27735390,
+      "0x37863bf1f490d3745d92cd5b2aae390ce8f9e9d0100623ce84d60e2354d59d82",
+    mintBlock: 31963615,
     sponsor: MARUNODE,
     generation: {
       model: "claude-opus-5",
@@ -1154,8 +1157,8 @@ export const ISSUES: Issue[] = [
     claimedCount: 1102,
     readerCount: 1268,
     mintTxHash:
-      "0xcc3e1cda743e22574b70d92d76d2d125f07b9f1f7f35ce68d898034348326635",
-    mintBlock: 27303492,
+      "0x12c80256d96199c380d78e483e2c7cb70b11ceed47787f447c96191864f9c724",
+    mintBlock: 31963531,
     generation: {
       model: "claude-opus-5",
       imageModel: "syndix-diffusion-v2",

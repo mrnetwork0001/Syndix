@@ -20,7 +20,7 @@ This is not a generic dApp with a chain swapped in. Four GIWA properties are loa
 | **Flashblocks — up to 200ms preconfirmations** | A reward claim confirms while the reader is still looking at the button. `lib/wagmi.ts` keeps a separate transport pointed at the Flashblocks RPC and reads receipts under the `pending` tag, so the claim UX is instant rather than pending. |
 | **~1s blocks, sub-cent fees** | A $0.10 reward is economically viable. On L1 the gas would cost 40× the reward; here the reward dominates the cost, which is the whole premise. |
 | **`username.up.id` — Soul-Bound, one per wallet** | This is the sybil gate. A reward pool keyed on raw addresses is a faucet; a script drains it in one block. One-human-one-name is what makes reader rewards a business rather than an exploit. |
-| **ERC-4337 EntryPoint predeployed at genesis** | Readers claim without holding ETH. The claim is a UserOperation sponsored by a Syndix paymaster against the standard v0.7 EntryPoint. |
+| **ERC-4337 EntryPoint predeployed at genesis** | The path to removing gas from the reader's experience entirely, by routing claims as UserOperations through the v0.7 EntryPoint with a Syndix paymaster. *Not built yet* — today readers submit their own transaction and pay ~0.00000018 ETH for it. |
 
 Correcting four things that circulate widely about GIWA (and that the project's own first
 draft had wrong): the chain ID is **91342**, identity is **`up.id`** and not `giwa.id`,
@@ -159,8 +159,12 @@ Stated plainly, because a grant reviewer should not have to guess:
 | GIWA chain reads | **Real.** The ingestion agent queries live head state and gas price from the Flashblocks RPC on every run; those block numbers are verifiable on the explorer. |
 | AI issue generation | **Real when `ANTHROPIC_API_KEY` is set** — `claude-opus-5`, streamed, schema-constrained. Otherwise a recorded pipeline replays and the studio badges itself "Simulated". |
 | x402 endpoint | **Real protocol, real verification when deployed.** With a treasury address set it verifies settlement on-chain; without one it accepts a well-formed hash and returns `verification: "accepted-unverified"`. |
-| Editorial dataset | **Authored, not live.** Six issues written against verified GIWA facts. |
-| Reward claim flow | **Simulated end to end** until contracts are deployed. The claim modal says so explicitly and marks the generated tx hash as simulated. |
+| Editorial dataset | **Authored, not live.** Six issues written against verified GIWA facts, each published on chain with a real transaction. |
+| Reward claim flow | **Real.** Attestation signed by `/api/attest`, transaction submitted by the reader, settled on GIWA Sepolia. Falls back to a clearly-labelled simulation when no treasury is configured. |
+| up.id identity | **Real on testnet.** Any wallet can self-claim a name via `MockUpIdRegistry.claimName`, enforcing one-per-wallet. Production swaps in the real up.id resolver, where names are issued to Dojang Verified Addresses. |
+| Analytics time series | **Authored.** No indexer exists to reconstruct daily history from chain events, so the 14-day chart is a projection and is labelled as one. The treasury split beside it is read from the contract. |
+| ERC-4337 gasless | **Not built.** Readers pay their own gas (~0.00000018 ETH). The claim modal describes it as it actually behaves. |
+| IPFS pinning | **Not built.** `contentURI` values are authored CIDs and do not resolve. |
 
 ---
 

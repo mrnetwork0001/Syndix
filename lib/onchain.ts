@@ -42,3 +42,17 @@ export function onchainArticleId(issueId: number): number | undefined {
 export function issueIdForArticle(articleId: number): number | undefined {
   return ARTICLE_TO_ISSUE_ID[articleId];
 }
+
+/**
+ * SyndixArticleNFT editions are keyed by the DATASET issue id, not the treasury
+ * article id.
+ *
+ * These are two different numbering schemes and it is worth being explicit:
+ * the treasury assigns its ids from publish order (`++articleCount`), whereas
+ * `registerEdition(issueId, …)` takes the key as a free parameter, so editions
+ * were registered under the dataset id directly. Use this function for anything
+ * touching the NFT, and `onchainArticleId` for anything touching the treasury.
+ */
+export function editionIdForIssue(issueId: number): number {
+  return issueId;
+}

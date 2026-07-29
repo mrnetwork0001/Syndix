@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: App — typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test
+
+      # No NEXT_PUBLIC_SYNDIX_* here on purpose: the build must succeed with no
+      # deployment configured, which is the path a fresh clone takes.
+      - run: npm run build
+
+  contracts:
+    name: Contracts — forge test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      # OpenZeppelin is an npm dependency; remappings.txt points into node_modules.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # forge-std is gitignored (it is a checkout, not source), so a fresh clone
+      # has to fetch it. remappings.txt expects it at contracts/lib/forge-std.
+      - name: Install forge-std
+        run: |
+          git clone --depth 1 --branch v1.16.2 \
+            https://github.com/foundry-rs/forge-std contracts/lib/forge-std
+
+      - run: forge --version
+      - run: forge build --sizes
+      - run: forge test -vv

@@ -13,7 +13,9 @@
     "contracts:test": "forge test -vv",
     "contracts:deploy": "forge script script/Deploy.s.sol:Deploy --rpc-url giwa_sepolia --broadcast -vvv",
     "abi": "forge build && node scripts/generate-abi.mjs",
-    "check": "npm run typecheck && npm run lint && npm run build && npm run contracts:test"
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build && npm run contracts:test",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
@@ -37,9 +39,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }

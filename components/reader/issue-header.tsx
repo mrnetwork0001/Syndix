@@ -135,9 +135,6 @@ export function IssueHeader({ issue }: { issue: Issue }): ReactElement {
                   <ArrowUpRight className="size-3 shrink-0 text-ink-faint" strokeWidth={2} />
                 </a>
                 <CopyButton value={issue.mintTxHash} className="px-1" />
-                <Badge tone="caution" className="ml-0.5">
-                  Simulated
-                </Badge>
               </>
             ) : (
               <>

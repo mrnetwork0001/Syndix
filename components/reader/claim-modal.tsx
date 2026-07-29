@@ -40,6 +40,7 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { Mono } from "@/components/ui/mono";
 import { syndixTreasuryAbi } from "@/lib/abi";
 import { onchainArticleId } from "@/lib/onchain";
+import { UpIdClaim } from "@/components/reader/up-id-claim";
 import { flashblocksTransport } from "@/lib/wagmi";
 import {
   GIWA_PREDEPLOYS,
@@ -287,11 +288,14 @@ export function ClaimModal({
   const [stage, setStage] = useState<Stage>("idle");
   const [txHash, setTxHash] = useState<string | null>(null);
   const [claimError, setClaimError] = useState<string | null>(null);
+  const [onchainName, setOnchainName] = useState<string | null>(null);
   const { writeContractAsync } = useWriteContract();
 
   const normalized = normalizeUpId(nameInput);
   const nameValid = isValidUpId(normalized);
-  const identityReady = Boolean(address) && nameValid;
+  const identityReady = IS_LIVE_CHAIN
+    ? Boolean(address) && Boolean(onchainName)
+    : Boolean(address) && nameValid;
   const dwellReady = dwellSeconds >= MIN_DWELL_SECONDS;
   const running = stage !== "idle" && stage !== "sealed";
   const canClaim = identityReady && dwellReady && stage === "idle";
@@ -589,6 +593,9 @@ export function ClaimModal({
                   </p>
                 )}
 
+                {IS_LIVE_CHAIN ? (
+                  <UpIdClaim onVerified={setOnchainName} />
+                ) : (
                 <div>
                   <label
                     htmlFor={inputId}
@@ -640,6 +647,7 @@ export function ClaimModal({
                     )}
                   </p>
                 </div>
+                )}
               </div>
             </Step>
 
@@ -665,23 +673,23 @@ export function ClaimModal({
               )}
             </Step>
 
-            <Step index={3} title="Sponsored gas" icon={Fuel} state={stepState[3]}>
+            <Step index={3} title="Gas" icon={Fuel} state={stepState[3]}>
               <p className="text-[12.5px] leading-relaxed text-ink-muted">
-                The claim is submitted as an ERC-4337 UserOperation through the
-                EntryPoint v0.7 predeployed on GIWA, with a Syndix paymaster covering
-                gas. You need no ETH and never see a gas prompt.
+                You submit this transaction yourself and pay its gas — about{" "}
+                <span className="font-mono tabular-nums">0.00000018 ETH</span> on
+                GIWA, roughly a{" "}
+                <span className="font-mono tabular-nums">166×</span> smaller number
+                than the reward it delivers. That ratio is why a ten-cent reward is
+                a viable product here and is not one on Ethereum L1.
               </p>
-              <div className="mt-2.5 flex items-center gap-2">
-                <span className="text-[11px] tracking-[0.14em] text-ink-faint uppercase">
-                  EntryPoint
-                </span>
-                <Mono className="truncate text-[11px]">
+              <p className="mt-2.5 text-[11.5px] leading-relaxed text-ink-faint">
+                A future version can remove the gas step entirely by routing the
+                claim through the ERC-4337 EntryPoint v0.7 predeployed at{" "}
+                <Mono className="text-[11px]">
                   {GIWA_PREDEPLOYS.entryPointV07}
-                </Mono>
-              </div>
-              <p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-faint">
-                The EntryPoint is a GIWA genesis predeploy. The paymaster is ours — GIWA
-                ships no first-party paymaster product.
+                </Mono>{" "}
+                with a Syndix paymaster. That paymaster is not built yet, so this
+                step is deliberately described as it actually behaves.
               </p>
             </Step>
 

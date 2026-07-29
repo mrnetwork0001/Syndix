@@ -20,6 +20,7 @@ export interface LiveProtocolStats {
   live: true;
   articleCount: number;
   uniqueReaders: number;
+  totalProtocolVolumeWei: bigint;
   totalRewardDistributedWei: bigint;
   reservedRewardsWei: bigint;
   treasuryBalanceWei: bigint;
@@ -58,6 +59,7 @@ export async function readProtocolChainStats(): Promise<ProtocolChainStats> {
     const [
       articleCount,
       uniqueReaders,
+      totalProtocolVolume,
       totalRewardDistributed,
       reservedRewards,
       unreservedBalance,
@@ -67,6 +69,7 @@ export async function readProtocolChainStats(): Promise<ProtocolChainStats> {
     ] = await Promise.all([
       client.readContract({ ...common, functionName: "articleCount" }),
       client.readContract({ ...common, functionName: "uniqueReaders" }),
+      client.readContract({ ...common, functionName: "totalProtocolVolume" }),
       client.readContract({ ...common, functionName: "totalRewardDistributed" }),
       client.readContract({ ...common, functionName: "reservedRewards" }),
       client.readContract({ ...common, functionName: "unreservedBalance" }),
@@ -79,6 +82,7 @@ export async function readProtocolChainStats(): Promise<ProtocolChainStats> {
       live: true,
       articleCount: Number(articleCount),
       uniqueReaders: Number(uniqueReaders),
+      totalProtocolVolumeWei: totalProtocolVolume,
       totalRewardDistributedWei: totalRewardDistributed,
       reservedRewardsWei: reservedRewards,
       treasuryBalanceWei: treasuryBalance,
