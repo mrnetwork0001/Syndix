@@ -30,6 +30,27 @@ verified table.
 
 ---
 
+## Live on GIWA Sepolia
+
+Deployed and verified working — a reader claim has settled end to end on chain.
+
+| Contract | Address |
+| --- | --- |
+| `SyndixTreasury` | [`0x5465f31a6155E3eCCcC35f4E5bDC0e287763B0ee`](https://sepolia-explorer.giwa.io/address/0x5465f31a6155E3eCCcC35f4E5bDC0e287763B0ee) |
+| `SyndixArticleNFT` | [`0x6165bEa60EE395F8A663026b40BD2dCDb2Ca23cD`](https://sepolia-explorer.giwa.io/address/0x6165bEa60EE395F8A663026b40BD2dCDb2Ca23cD) |
+| `MockUpIdRegistry` | [`0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d`](https://sepolia-explorer.giwa.io/address/0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d) |
+
+Six issues are published on chain with funded reward pools. The first real
+claim — attestation signed by `/api/attest`, transaction submitted by the
+reader — is
+[`0x49eb506b…78502a`](https://sepolia-explorer.giwa.io/tx/0x49eb506b106fb83433a68324551139d68227767016671ae7fce89b704978502a).
+
+**The economics, measured rather than asserted:** deploying all three contracts
+cost **0.0000066 ETH**. A claim costs 180,313 gas — about **0.00000018 ETH** at
+GIWA's ~0.001 gwei. The reward itself is 0.00003 ETH. So the reward is roughly
+**166× the gas needed to deliver it**. On Ethereum L1 that ratio inverts and the
+product cannot exist; that inversion is the entire reason Syndix is built here.
+
 ## Architecture
 
 ```

@@ -24,16 +24,30 @@ import {
   X,
   Zap,
   type LucideIcon,
+  ShieldCheck,
 } from "lucide-react";
-import { WagmiContext, useAccount, useConnect, useConnectors } from "wagmi";
+import {
+  WagmiContext,
+  useAccount,
+  useConnect,
+  useConnectors,
+  useWriteContract,
+} from "wagmi";
+import { createPublicClient } from "viem";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Mono } from "@/components/ui/mono";
+import { syndixTreasuryAbi } from "@/lib/abi";
+import { onchainArticleId } from "@/lib/onchain";
+import { flashblocksTransport } from "@/lib/wagmi";
 import {
   GIWA_PREDEPLOYS,
   GIWA_SEPOLIA_ID,
+  IS_LIVE_CHAIN,
+  SYNDIX_CONTRACTS,
   explorerTx,
+  giwaSepolia,
   isValidUpId,
   normalizeUpId,
   shortenAddress,
@@ -54,7 +68,13 @@ const MIN_DWELL_SECONDS = 15;
 const PRECONFIRM_MS = 187;
 const SEAL_MS = 1010;
 
-type Stage = "idle" | "attesting" | "sponsoring" | "preconfirmed" | "sealed";
+type Stage =
+  | "idle"
+  | "attesting"
+  | "sponsoring"
+  | "preconfirmed"
+  | "sealed"
+  | "failed";
 
 const STAGE_ORDER: Stage[] = [
   "idle",
@@ -266,6 +286,8 @@ export function ClaimModal({
   const [nameInput, setNameInput] = useState("");
   const [stage, setStage] = useState<Stage>("idle");
   const [txHash, setTxHash] = useState<string | null>(null);
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const { writeContractAsync } = useWriteContract();
 
   const normalized = normalizeUpId(nameInput);
   const nameValid = isValidUpId(normalized);
@@ -347,8 +369,93 @@ export function ClaimModal({
     };
   }, [open]);
 
-  const start = useCallback(() => {
-    if (!canClaim || !address) return;
+  /**
+   * The real claim: fetch an EIP-712 ReadProof from the attester, submit
+   * claimReaderReward ourselves, then race the receipt against the Flashblocks
+   * `pending` tag so the reward lands in ~200ms instead of a sealed block.
+   */
+  const startOnChain = useCallback(async () => {
+    if (!address) return;
+
+    // Publish order decides the on-chain id, so it is not interchangeable with
+    // the dataset id. Bail loudly rather than sign for the wrong article.
+    const articleId = onchainArticleId(issue.id);
+    if (articleId === undefined) {
+      setClaimError("This issue has not been published to GIWA Sepolia yet.");
+      setStage("failed");
+      return;
+    }
+
+    setClaimError(null);
+    setStage("attesting");
+
+    try {
+      const response = await fetch("/api/attest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          articleId,
+          reader: address,
+          dwellSeconds,
+        }),
+      });
+
+      const attestation: unknown = await response.json();
+      if (!response.ok) {
+        const message =
+          typeof attestation === "object" &&
+          attestation !== null &&
+          "error" in attestation
+            ? String((attestation as { error: unknown }).error)
+            : `Attester returned ${response.status}`;
+        throw new Error(message);
+      }
+
+      const { signature, deadline, dwellSeconds: attestedDwell } =
+        attestation as {
+          signature: `0x${string}`;
+          deadline: string;
+          dwellSeconds: number;
+        };
+
+      setStage("sponsoring");
+
+      const hash = await writeContractAsync({
+        address: SYNDIX_CONTRACTS.treasury,
+        abi: syndixTreasuryAbi,
+        functionName: "claimReaderReward",
+        args: [BigInt(articleId), attestedDwell, BigInt(deadline), signature],
+      });
+
+      setTxHash(hash);
+
+      const client = createPublicClient({
+        chain: giwaSepolia,
+        transport: flashblocksTransport,
+      });
+
+      const receipt = await client.waitForTransactionReceipt({
+        hash,
+        pollingInterval: 100,
+        confirmations: 0,
+      });
+      if (receipt.status !== "success") {
+        throw new Error("The claim transaction reverted on GIWA.");
+      }
+
+      setStage("preconfirmed");
+      setStage("sealed");
+      onClaimed(hash);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // Strip viem's multi-paragraph detail; the first line is the useful part.
+      setClaimError(message.split("\n")[0]);
+      setStage("failed");
+    }
+  }, [address, issue.id, dwellSeconds, writeContractAsync, onClaimed]);
+
+  const startSimulated = useCallback(() => {
+    if (!address) return;
     const hash = simulatedHash(`${issue.id}|${normalized}|${address}|${dwellSeconds}`);
 
     const attested = 720;
@@ -369,7 +476,16 @@ export function ClaimModal({
         onClaimed(hash);
       }, preconfirmed + SEAL_MS),
     );
-  }, [canClaim, address, issue.id, normalized, dwellSeconds, onClaimed]);
+  }, [address, issue.id, normalized, dwellSeconds, onClaimed]);
+
+  const start = useCallback(() => {
+    if (!canClaim || !address) return;
+    if (IS_LIVE_CHAIN) {
+      void startOnChain();
+      return;
+    }
+    startSimulated();
+  }, [canClaim, address, startOnChain, startSimulated]);
 
   const stepState = useMemo<Record<1 | 2 | 3 | 4, StepState>>(() => {
     const r = rank(stage);
@@ -423,13 +539,42 @@ export function ClaimModal({
           </button>
         </header>
 
-        <div className="flex items-start gap-2.5 border-b border-hairline bg-caution/[0.07] px-5 py-3">
-          <TriangleAlert className="mt-px size-4 shrink-0 text-caution" strokeWidth={1.9} />
-          <p className="text-[11.5px] leading-relaxed text-caution">
-            Simulated — contracts not yet deployed to GIWA Sepolia. Nothing below is
-            signed, submitted or broadcast, and the resulting hash is fabricated.
-          </p>
-        </div>
+        {IS_LIVE_CHAIN ? (
+          <div className="flex items-start gap-2.5 border-b border-hairline bg-positive/[0.07] px-5 py-3">
+            <ShieldCheck
+              className="mt-px size-4 shrink-0 text-positive"
+              strokeWidth={1.9}
+            />
+            <p className="text-[11.5px] leading-relaxed text-positive">
+              Live on GIWA Sepolia. The steps below issue a real EIP-712
+              attestation and submit a real transaction from your wallet.
+            </p>
+          </div>
+        ) : (
+          <div className="flex items-start gap-2.5 border-b border-hairline bg-caution/[0.07] px-5 py-3">
+            <TriangleAlert
+              className="mt-px size-4 shrink-0 text-caution"
+              strokeWidth={1.9}
+            />
+            <p className="text-[11.5px] leading-relaxed text-caution">
+              Simulated — contracts not yet deployed to GIWA Sepolia. Nothing below is
+              signed, submitted or broadcast, and the resulting hash is fabricated.
+            </p>
+          </div>
+        )}
+
+        {claimError ? (
+          <div
+            role="alert"
+            className="flex items-start gap-2.5 border-b border-hairline bg-critical/[0.08] px-5 py-3"
+          >
+            <TriangleAlert
+              className="mt-px size-4 shrink-0 text-critical"
+              strokeWidth={1.9}
+            />
+            <p className="text-[11.5px] leading-relaxed text-critical">{claimError}</p>
+          </div>
+        ) : null}
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
           <ol>
