@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/", label: "Feed", matches: ["/", "/issue"] },
   { href: "/studio", label: "Agent Studio", short: "Studio", matches: ["/studio"] },
+  { href: "/protocol", label: "Protocol", matches: ["/protocol"] },
 ] as const;
 
 export function Header(): ReactElement {
