@@ -24,7 +24,7 @@ for (const name of CONTRACTS) {
   let abi;
   try {
     abi = JSON.parse(readFileSync(artifactPath, "utf8")).abi;
-  } catch (error) {
+  } catch {
     console.error(`Missing artifact ${artifactPath} — run \`forge build\` first.`);
     process.exit(1);
   }
