@@ -1,26 +1,381 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------ */
+/*  Syndix Design System — Raycast / Linear-grade dark glassmorphism   */
+/* ------------------------------------------------------------------ */
+
+@theme {
+  /* Surfaces */
+  --color-void: #0b0b0c;
+  --color-surface: #141416;
+  --color-elevated: #1a1a1e;
+  --color-overlay: #202026;
+
+  /* Accent — GIWA blue */
+  --color-accent: #0066ff;
+  --color-accent-hover: #1a75ff;
+  --color-accent-soft: #0b1f3d;
+  --color-accent-dim: #0052cc;
+
+  /* Semantic */
+  --color-positive: #22c55e;
+  --color-caution: #f59e0b;
+  --color-critical: #ef4444;
+  --color-cyan: #22d3ee;
+  --color-violet: #a78bfa;
+
+  /* Text */
+  --color-ink: #f4f4f5;
+  --color-ink-muted: #a1a1aa;
+  --color-ink-faint: #6b6b74;
+
+  /* Hairlines */
+  --color-hairline: rgba(255, 255, 255, 0.08);
+  --color-hairline-strong: rgba(255, 255, 255, 0.14);
+
+  /* Type */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+
+  /* Motion */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Radii */
+  --radius-card: 14px;
+  --radius-panel: 18px;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Base                                                               */
+/* ------------------------------------------------------------------ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  border-color: var(--color-hairline);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background-color: var(--color-void);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-void);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  letter-spacing: -0.011em;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(0, 102, 255, 0.32);
+  color: #fff;
+}
+
+/* Thin, Linear-style scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+  background-clip: content-box;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Component utilities                                                */
+/* ------------------------------------------------------------------ */
+
+@utility glass {
+  background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--color-hairline);
+}
+
+/* Card with the signature top inner-highlight hairline */
+@utility panel {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.024) 0%,
+      rgba(255, 255, 255, 0) 42%
+    ),
+    var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-panel);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05),
+    0 1px 2px 0 rgba(0, 0, 0, 0.4),
+    0 8px 24px -12px rgba(0, 0, 0, 0.6);
+}
+
+@utility accent-glow {
+  box-shadow:
+    0 0 0 1px rgba(0, 102, 255, 0.5),
+    0 2px 10px -2px rgba(0, 102, 255, 0.5),
+    0 8px 32px -8px rgba(0, 102, 255, 0.45);
+}
+
+@utility text-gradient {
+  background: linear-gradient(180deg, #ffffff 0%, #9b9ba4 130%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Grain overlay — kills banding on large dark gradients */
+.grain {
+  position: relative;
+}
+
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.14;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ------------------------------------------------------------------ */
+/*  Animations                                                         */
+/* ------------------------------------------------------------------ */
+
+@keyframes syndix-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+@keyframes syndix-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(240%);
+  }
+}
+
+@keyframes syndix-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes syndix-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-live-dot {
+  animation: syndix-pulse 2s var(--ease-out-expo) infinite;
+}
+
+.animate-sweep {
+  animation: syndix-sweep 2.2s var(--ease-out-expo) infinite;
+}
+
+.animate-rise {
+  animation: syndix-rise 0.5s var(--ease-out-expo) both;
+}
+
+.animate-slow-spin {
+  animation: syndix-spin 12s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Markdown — issue reader typography                                 */
+/* ------------------------------------------------------------------ */
+
+.markdown {
+  color: var(--color-ink-muted);
+  font-size: 1.0625rem;
+  line-height: 1.78;
+}
+
+.markdown > * + * {
+  margin-top: 1.15em;
+}
+
+.markdown h2 {
+  color: var(--color-ink);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-top: 2.4em;
+  margin-bottom: 0.7em;
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid var(--color-hairline);
+  scroll-margin-top: 6rem;
+}
+
+.markdown h3 {
+  color: var(--color-ink);
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin-top: 2em;
+  margin-bottom: 0.55em;
+  scroll-margin-top: 6rem;
+}
+
+.markdown p {
+  text-wrap: pretty;
+}
+
+.markdown strong {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.markdown a {
+  color: #4d92ff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(77, 146, 255, 0.4);
+  transition: text-decoration-color 0.15s;
+}
+.markdown a:hover {
+  text-decoration-color: rgba(77, 146, 255, 1);
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 1.35em;
+}
+.markdown ul {
+  list-style: disc;
+}
+.markdown ol {
+  list-style: decimal;
+}
+.markdown li {
+  margin-top: 0.5em;
+}
+.markdown li::marker {
+  color: var(--color-ink-faint);
+}
+
+.markdown blockquote {
+  border-left: 2px solid var(--color-accent);
+  padding: 0.15em 0 0.15em 1.15em;
+  color: var(--color-ink-muted);
+  font-style: italic;
+}
+
+.markdown code {
+  font-family: var(--font-mono);
+  font-size: 0.855em;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-hairline);
+  border-radius: 5px;
+  padding: 0.15em 0.42em;
+  color: #c9d7ff;
+  font-style: normal;
+}
+
+.markdown pre {
+  background: #0e0e10;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  padding: 1.1rem 1.25rem;
+  overflow-x: auto;
+  font-size: 0.855rem;
+  line-height: 1.68;
+}
+
+.markdown pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #d8d8e0;
+  font-size: inherit;
+}
+
+.markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.94rem;
+  display: block;
+  overflow-x: auto;
+}
+
+.markdown th {
+  text-align: left;
+  color: var(--color-ink);
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--color-hairline-strong);
+  white-space: nowrap;
+}
+
+.markdown td {
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--color-hairline);
+  vertical-align: top;
+}
+
+.markdown tr:last-child td {
+  border-bottom: none;
+}
+
+.markdown hr {
+  border: none;
+  border-top: 1px solid var(--color-hairline);
+  margin: 2.5em 0;
+}
+
+.markdown img {
+  max-width: 100%;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-hairline);
 }

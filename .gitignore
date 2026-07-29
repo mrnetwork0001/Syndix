@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Foundry
+/out/
+/cache/
+/broadcast/
+/contracts/lib/
+
+# Env
+.env
+.env.local
+!.env.example

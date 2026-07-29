@@ -1,0 +1,28 @@
+[profile.default]
+src = "contracts"
+out = "out"
+# Solidity deps live under contracts/lib — the top-level lib/ is the app's
+# TypeScript module directory and the two must not share a namespace.
+libs = ["node_modules", "contracts/lib"]
+test = "test/contracts"
+script = "script"
+solc_version = "0.8.24"
+optimizer = true
+optimizer_runs = 200
+via_ir = false
+evm_version = "cancun"
+bytecode_hash = "none"
+fs_permissions = [{ access = "read", path = "./out" }]
+
+[fmt]
+line_length = 100
+tab_width = 4
+bracket_spacing = false
+int_types = "long"
+
+[rpc_endpoints]
+giwa_sepolia = "https://sepolia-rpc.giwa.io"
+giwa_flashblocks = "https://sepolia-rpc-flashblocks.giwa.io"
+
+[etherscan]
+giwa_sepolia = { key = "${GIWA_EXPLORER_API_KEY}", url = "https://sepolia-explorer.giwa.io/api", chain = 91342 }

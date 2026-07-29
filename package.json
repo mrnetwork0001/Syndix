@@ -1,19 +1,38 @@
 {
-  "name": "syndix-tmp",
+  "name": "syndix",
   "version": "0.1.0",
   "private": true,
+  "description": "Autonomous AI news syndicate and reader micro-reward protocol on GIWA L2",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "contracts:build": "forge build",
+    "contracts:test": "forge test -vv",
+    "contracts:deploy": "forge script script/Deploy.s.sol:Deploy --rpc-url giwa_sepolia --broadcast -vvv",
+    "abi": "forge build && node scripts/generate-abi.mjs",
+    "check": "npm run typecheck && npm run lint && npm run build && npm run contracts:test"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
+    "@tanstack/react-query": "^5.101.4",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.27.0",
+    "motion": "^12.43.0",
     "next": "16.2.12",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "react-markdown": "^10.1.0",
+    "recharts": "^3.10.1",
+    "remark-gfm": "^4.0.1",
+    "tailwind-merge": "^3.6.0",
+    "viem": "^2.55.10",
+    "wagmi": "^3.7.4"
   },
   "devDependencies": {
+    "@openzeppelin/contracts": "^5.6.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
