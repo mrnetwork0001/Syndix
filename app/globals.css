@@ -54,8 +54,14 @@
   color-scheme: dark;
 }
 
-* {
-  border-color: var(--color-hairline);
+/* Must live in @layer base. Unlayered rules outrank everything Tailwind emits
+   into @layer utilities, so an unlayered `*` selector here would silently
+   defeat every `border-accent` / `border-critical` / `border-positive`
+   utility in the app and paint them all hairline grey. */
+@layer base {
+  * {
+    border-color: var(--color-hairline);
+  }
 }
 
 html {

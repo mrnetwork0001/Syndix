@@ -53,7 +53,9 @@ export function IssueHeader({ issue }: { issue: Issue }): ReactElement {
   return (
     <header>
       <div className="relative isolate">
-        <div className="grain absolute inset-0 -z-10 overflow-hidden">
+        {/* `grain` is deliberately not applied here: it forces position:relative
+            from un-layered CSS, and CoverArt already carries its own noise. */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
           <CoverArt seed={issue.coverSeed} title={issue.title} track={issue.track} />
           <div className="absolute inset-0 bg-gradient-to-t from-void via-void/80 to-void/20" />
           <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-void to-transparent" />

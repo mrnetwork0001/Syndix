@@ -109,7 +109,13 @@ export function ClaimBar({ issue }: { issue: Issue }): ReactElement {
       }
 
       setProgress(Math.min(1, Math.max(0, depth)));
-      setAtEnd(scrolled + viewport >= doc.scrollHeight - FOOTER_MARGIN);
+
+      // Yield to the footer at the very bottom — but never on a page with so
+      // little scroll room that the bar could never be reached at all.
+      const runway = doc.scrollHeight - viewport;
+      setAtEnd(
+        runway > FOOTER_MARGIN && scrolled + viewport >= doc.scrollHeight - FOOTER_MARGIN,
+      );
     };
 
     const onScroll = () => {
@@ -133,6 +139,8 @@ export function ClaimBar({ issue }: { issue: Issue }): ReactElement {
     },
     [key],
   );
+
+  const closeModal = useCallback(() => setOpen(false), []);
 
   const unlocked = progress >= GATE;
   const visible = unlocked && !atEnd;
@@ -233,7 +241,7 @@ export function ClaimBar({ issue }: { issue: Issue }): ReactElement {
         <ClaimModal
           issue={issue}
           open
-          onClose={() => setOpen(false)}
+          onClose={closeModal}
           dwellSeconds={dwell}
           onClaimed={handleClaimed}
         />

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, Coins, FileCode2, Handshake, Landmark, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -62,7 +62,7 @@ function RecordRow({
   children,
 }: {
   label: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }): ReactElement {
   return (
     <div className="flex items-center justify-between gap-3 px-5 py-2.5">

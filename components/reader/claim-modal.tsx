@@ -283,6 +283,17 @@ export function ClaimModal({
 
   useEffect(() => clearTimers, [clearTimers]);
 
+  /**
+   * The dialog effect must run exactly once per open. `onClose` is usually an
+   * inline arrow from the caller, and this component re-renders every second
+   * while dwell ticks — depending on it directly would tear the trap down and
+   * yank focus back to the trigger on every tick.
+   */
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   /* Dialog behaviour: scroll lock, focus trap, focus restore, Escape. */
   useEffect(() => {
     if (!open) return;
@@ -296,7 +307,7 @@ export function ClaimModal({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab") return;
@@ -334,7 +345,7 @@ export function ClaimModal({
       body.style.overflow = previousOverflow;
       restoreTo?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   const start = useCallback(() => {
     if (!canClaim || !address) return;
