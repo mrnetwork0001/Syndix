@@ -85,9 +85,21 @@ function ProtocolRecord({ issue }: { issue: Issue }): ReactElement {
     <Panel className="overflow-hidden">
       <PanelHeader
         title="On-chain record"
-        description="What SyndixArticleNFT and SyndixTreasury would hold for this issue."
+        description={
+          issue.mintTxHash
+            ? "What SyndixTreasury holds for this issue on GIWA Sepolia."
+            : "What SyndixTreasury will hold once this issue is published."
+        }
         icon={Landmark}
-        action={<Badge tone="caution">Simulated</Badge>}
+        action={
+          issue.mintTxHash ? (
+            <Badge tone="positive" dot>
+              On-chain
+            </Badge>
+          ) : (
+            <Badge tone="caution">Not published</Badge>
+          )
+        }
       />
 
       <div className="divide-y divide-hairline">

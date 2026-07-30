@@ -259,7 +259,8 @@ export interface ClaimModalProps {
   open: boolean;
   onClose: () => void;
   dwellSeconds: number;
-  onClaimed: (hash: string) => void;
+  /** `live` is true when the hash is a real GIWA transaction. */
+  onClaimed: (hash: string, live: boolean) => void;
 }
 
 /**
@@ -458,7 +459,7 @@ export function ClaimModal({
       });
       setStage("preconfirmed");
       setStage("sealed");
-      onClaimed(hash);
+      onClaimed(hash, true);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       // Strip viem's multi-paragraph detail; the first line is the useful part.
@@ -486,7 +487,7 @@ export function ClaimModal({
     timers.current.push(
       setTimeout(() => {
         setStage("sealed");
-        onClaimed(hash);
+        onClaimed(hash, false);
       }, preconfirmed + SEAL_MS),
     );
   }, [address, issue.id, normalized, dwellSeconds, onClaimed]);

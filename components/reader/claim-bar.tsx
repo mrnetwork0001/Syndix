@@ -48,6 +48,24 @@ function subscribeClaims(onStoreChange: () => void): () => void {
   };
 }
 
+export interface StoredClaim {
+  hash: string;
+  /** True when the hash is a real GIWA transaction rather than a simulation. */
+  live: boolean;
+}
+
+/**
+ * Encoded as `live:0x…` / `sim:0x…` rather than JSON so an older stored value
+ * (a bare hash from a previous session) still parses — as simulated, which is
+ * the safe reading.
+ */
+function decodeClaim(raw: string | null): StoredClaim | null {
+  if (!raw) return null;
+  if (raw.startsWith("live:")) return { hash: raw.slice(5), live: true };
+  if (raw.startsWith("sim:")) return { hash: raw.slice(4), live: false };
+  return { hash: raw, live: false };
+}
+
 function readClaim(key: string): string | null {
   const mirrored = claimMemory.get(key);
   if (mirrored) return mirrored;
@@ -58,10 +76,11 @@ function readClaim(key: string): string | null {
   }
 }
 
-function writeClaim(key: string, hash: string): void {
-  claimMemory.set(key, hash);
+function writeClaim(key: string, hash: string, live: boolean): void {
+  const encoded = `${live ? "live" : "sim"}:${hash}`;
+  claimMemory.set(key, encoded);
   try {
-    sessionStorage.setItem(key, hash);
+    sessionStorage.setItem(key, encoded);
   } catch {
     /* Non-fatal: the in-memory mirror still drives this tab. */
   }
@@ -75,11 +94,14 @@ export function ClaimBar({ issue }: { issue: Issue }): ReactElement {
   const [open, setOpen] = useState(false);
 
   const key = claimKey(issue.id);
-  const claimedHash = useSyncExternalStore(
+  const storedRaw = useSyncExternalStore(
     subscribeClaims,
     () => readClaim(key),
     () => null,
   );
+  const claim = decodeClaim(storedRaw);
+  const claimedHash = claim?.hash ?? null;
+  const claimLive = claim?.live ?? false;
 
   /* Dwell only accrues while the tab is actually in front of the reader. */
   useEffect(() => {
@@ -134,8 +156,8 @@ export function ClaimBar({ issue }: { issue: Issue }): ReactElement {
   }, []);
 
   const handleClaimed = useCallback(
-    (hash: string) => {
-      writeClaim(key, hash);
+    (hash: string, live: boolean) => {
+      writeClaim(key, hash, live);
     },
     [key],
   );
@@ -193,7 +215,13 @@ export function ClaimBar({ issue }: { issue: Issue }): ReactElement {
                     </div>
                   </div>
                 </div>
-                <Badge tone="caution">Simulated — not broadcast</Badge>
+                {claimLive ? (
+                  <Badge tone="positive" dot>
+                    Settled on GIWA
+                  </Badge>
+                ) : (
+                  <Badge tone="caution">Simulated — not broadcast</Badge>
+                )}
               </>
             ) : (
               <>
