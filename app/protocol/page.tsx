@@ -304,7 +304,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
             {
               icon: Fingerprint,
               title: "Identity",
-              body: "Claims require a verified GIWA identity through IReaderRegistry — in production the up.id resolver, where a name is a Soul-Bound Token capped at one per wallet. That cap is the whole security model.",
+              body: "Claims require a verified GIWA identity through IReaderRegistry, pointed at the live Upbit Web3 Names registry. A name is a Soul-Bound Token capped at one per wallet, issued by GIWA and not by us — Syndix cannot mint itself the credential it checks. That cap is the whole security model.",
             },
             {
               icon: Signature,
@@ -354,7 +354,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
             </Row>
             <Row label="up.id — Soul-Bound, one per wallet">
               <span className="text-[13px] text-ink-muted">
-                ENS subdomains issued to Dojang-verified addresses
+                one ecosystem namespace, read by our reader registry
               </span>
             </Row>
             <Row label="ERC-4337 EntryPoint v0.7 predeployed">

@@ -38,10 +38,16 @@ Deployed and verified working — a reader claim has settled end to end on chain
 | --- | --- |
 | `SyndixTreasury` | [`0x5465f31a6155E3eCCcC35f4E5bDC0e287763B0ee`](https://sepolia-explorer.giwa.io/address/0x5465f31a6155E3eCCcC35f4E5bDC0e287763B0ee) |
 | `SyndixArticleNFT` | [`0xA0D49A6C4Ac081a2de9af2f422EdfffB8f41190e`](https://sepolia-explorer.giwa.io/address/0xA0D49A6C4Ac081a2de9af2f422EdfffB8f41190e) |
-| `MockUpIdRegistry` | [`0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d`](https://sepolia-explorer.giwa.io/address/0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d) |
+| `UpIdReaderRegistry` | [`0xa316Bb7762c5689ec905b2dec2899Ded93557941`](https://sepolia-explorer.giwa.io/address/0xa316Bb7762c5689ec905b2dec2899Ded93557941) |
 | `SyndixPaymaster` | [`0x3B13186a1E4b1108eA5CB2f8853D84A2aeD71Cc5`](https://sepolia-explorer.giwa.io/address/0x3B13186a1E4b1108eA5CB2f8853D84A2aeD71Cc5) |
+| `MockUpIdRegistry` (superseded) | [`0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d`](https://sepolia-explorer.giwa.io/address/0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d) |
 
-All four are verified on the GIWA explorer.
+All are verified on the GIWA explorer.
+
+`SyndixTreasury.readerRegistry` points at `UpIdReaderRegistry`, so **claims are gated
+on the real, ecosystem-wide Upbit Web3 Names registry**
+([`0x091D…9628`](https://sepolia-explorer.giwa.io/address/0x091D00004f21eb2Fc30964A8a4995692d9b49628)) —
+not on anything Syndix can mint. See [Identity](#identity-is-not-ours-to-issue).
 
 Issues are published on chain with funded reward pools, and the feed is a
 projection of that index — the app bundles no article content at all. The first
@@ -80,6 +86,34 @@ requires a smart-account factory on GIWA — the usual SimpleAccount factory
 addresses hold no code — and a bundler serving chain 91342. Neither exists today.
 Readers submit their own claim and pay ~0.00000018 ETH; the paymaster is standing
 infrastructure for when GIWA's Stable PayMaster lands.
+
+### Identity is not ours to issue
+
+`up.id` is one namespace for the whole GIWA ecosystem, not a per-app directory. A name is
+minted through GIWA's own flow — a Dojang attestation, then a VerifiedToken, then
+registration at [sepolia-playground.giwa.io](https://sepolia-playground.giwa.io) — and lands
+in the shared registry at
+[`0x091D…9628`](https://sepolia-explorer.giwa.io/address/0x091D00004f21eb2Fc30964A8a4995692d9b49628),
+an ERC-721 named "Upbit Web3 Names" (UPNAME). `gsucoin.up.id` is the same object to every
+app on the chain.
+
+So Syndix reads it and cannot write it. `UpIdReaderRegistry` is a nine-line adapter whose
+whole content is `balanceOf(reader) > 0`, and `SyndixTreasury.readerRegistry` points at it.
+The consequence is deliberate and worth stating plainly: **our own deployer wallet cannot
+claim a reader reward**, because it holds no genuine `up.id`. A protocol that could issue
+itself the credential it checks has not implemented a sybil gate.
+
+The label is a separate problem with a separate answer. tokenId is the ENS namehash, which
+cannot be inverted, and the registry is not `ERC721Enumerable` — `tokenOfOwnerByIndex`
+reverts and `supportsInterface(0x780e9d63)` is false — so no view function maps an address to
+the name it holds. `nameOf` therefore returns an empty string rather than a guess, and the UI
+resolves the display name from token metadata via `/api/up-id/:address`. Only the on-chain
+half authorises anything; if the label lookup fails, a verified reader still gets paid.
+
+`MockUpIdRegistry` stays deployed and the claim UI still supports it, because obtaining a
+real name is a separate errand and the mock keeps the flow demonstrable end to end. Which
+registry is live is read from the treasury at render time and stated in the UI — a judge can
+see whether the real gate or the test gate is enforcing.
 
 ### SyndixStableTreasury — the KRW migration path
 
@@ -185,9 +219,10 @@ treasury that withdraws against the raw balance — as the first draft of this c
 — silently bricks every outstanding reader claim the moment the owner takes a fee.
 
 **2. Sybil resistance.** `claimReaderReward` requires a verified identity through
-`IReaderRegistry`, satisfied in production by the `up.id` SBT resolver and on testnet by
-`MockUpIdRegistry`. The interface is deliberately thin so the deployment can point at the
-live resolver, a Dojang EAS attestation reader, or a mock, without touching the treasury.
+`IReaderRegistry`, satisfied on GIWA Sepolia today by `UpIdReaderRegistry` — an adapter over
+the live Upbit Web3 Names ERC-721. The interface is deliberately thin, which is what let the
+deployment move from a mock to the real registry with a single `setReaderRegistry` call and
+no redeploy.
 
 **3. Proof of read.** A claim carries an EIP-712 `ReadProof` signed by the Syndix
 read-attester, certifying dwell time. The reader still submits the transaction — or a 4337
@@ -220,10 +255,10 @@ Stated plainly, because a grant reviewer should not have to guess:
 | x402 endpoint | **Real protocol, real verification when deployed.** With a treasury address set it verifies settlement on-chain; without one it accepts a well-formed hash and returns `verification: "accepted-unverified"`. |
 | Editorial dataset | **Authored, not live.** Six issues written against verified GIWA facts, each published on chain with a real transaction. |
 | Reward claim flow | **Real.** Attestation signed by `/api/attest`, transaction submitted by the reader, settled on GIWA Sepolia. Falls back to a clearly-labelled simulation when no treasury is configured. |
-| up.id identity | **Real on testnet.** Any wallet can self-claim a name via `MockUpIdRegistry.claimName`, enforcing one-per-wallet. Production swaps in the real up.id resolver, where names are issued to Dojang Verified Addresses. |
-| Analytics time series | **Authored.** No indexer exists to reconstruct daily history from chain events, so the 14-day chart is a projection and is labelled as one. The treasury split beside it is read from the contract. |
-| ERC-4337 gasless | **Not built.** Readers pay their own gas (~0.00000018 ETH). The claim modal describes it as it actually behaves. |
-| IPFS pinning | **Not built.** `contentURI` values are authored CIDs and do not resolve. |
+| up.id identity | **Real, and not ours.** The treasury gates on `UpIdReaderRegistry`, which reads the live ecosystem registry — a wallet with no genuine `up.id` cannot claim, including our own deployer. Display labels are resolved from token metadata because the registry exposes no on-chain address→name lookup. |
+| Analytics time series | **Real.** `lib/indexer.ts` reconstructs daily buckets from `RewardClaimed` and `ArticlePublished` logs, floored at the treasury deploy block. Empty days render empty rather than interpolated. |
+| ERC-4337 gasless | **Paymaster real, sponsorship not yet reachable.** `SyndixPaymaster` is deployed, staked and funded, and sponsors only `claimReaderReward` — but GIWA Sepolia has no bundler serving chain 91342 and no smart-account factory, so readers currently pay their own gas (~0.00000018 ETH). The claim modal describes what actually happens. |
+| IPFS pinning | **Real.** Bodies are pinned through Pinata on publish; publishing aborts if pinning fails, so no article is ever indexed with an unresolvable CID. Reads go through `ipfs.io`. |
 
 ---
 

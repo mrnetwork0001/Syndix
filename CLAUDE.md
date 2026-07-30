@@ -19,6 +19,9 @@ Several of these correct widely-circulated errors. Check here before writing cha
 | Block time | ~1 second |
 | Mainnet | **Still under development.** Do not write mainnet config. |
 | Identity | **Upbit Web3 Names: `username.up.id`** — ENS subdomains of the `up.id` parent, issued as Soul-Bound Tokens, **one per verified wallet**. There is no `*.giwa.id` namespace. |
+| up.id registry | `0x091D00004f21eb2Fc30964A8a4995692d9b49628` — ERC-1967 proxy over `UpnameRegistry`, ERC-721 "Upbit Web3 Names" (UPNAME). **Ecosystem-wide, one namespace for all of GIWA.** Verify with `balanceOf(addr) > 0`. |
+| up.id labels | **Not readable on chain.** tokenId is the ENS namehash and the registry is *not* ERC721Enumerable (`tokenOfOwnerByIndex` reverts, `supportsInterface(0x780e9d63)` = false), so there is no address→name view. Labels come from `tokenURI` → `https://sepolia-id.giwa.io/metadata/<tokenId>`, or the explorer's `/api/v2/addresses/<a>/nft` (field is `token.address_hash`, **not** `token.address`). |
+| Minting a name | Only via GIWA's own flow at `https://sepolia-playground.giwa.io` (Dojang attestation → VerifiedToken → registration). No Syndix contract can issue one. |
 | Attestations | **Dojang**, built on EAS (predeployed `0x4200000000000000000000000000000000000021`). Issues Verified Address / Balance Root / Verified Balance / Verified Code. Upbit Korea is the primary issuer. |
 | Gasless | **No first-party "GIWA Paymaster" product exists.** ERC-4337 EntryPoint v0.6 (`0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789`) and v0.7 (`0x0000000071727De22E5E9d8BAf0edAc6f37da032`) are predeployed at genesis; you bring your own paymaster. |
 | Other predeploys | Multicall3 `0xcA11...CA11`, Permit2 `0x0000...78A3`, Safe, WETH9 `0x42..06`, L2StandardBridge `0x42..10`, GasPriceOracle `0x42..0F` |
@@ -119,9 +122,10 @@ No emoji in the UI — use lucide icons.
 1. **Solvency.** Every wei promised to a reader is tracked in `reservedRewards` and is
    unreachable by the owner; `withdrawTreasury` spends only `unreservedBalance()`.
    `address(this).balance >= reservedRewards` always holds (fuzzed, 256 runs).
-2. **Sybil resistance.** Claims require a verified identity via `IReaderRegistry` — in
-   production the `up.id` SBT resolver, one name per wallet. Without this the reward pool
-   is a faucet that a script drains in one block.
+2. **Sybil resistance.** Claims require a verified identity via `IReaderRegistry`, which on
+   GIWA Sepolia is `UpIdReaderRegistry` over the live Upbit Web3 Names ERC-721 — one name
+   per wallet, issued by GIWA and unmintable by us. Without this the reward pool is a
+   faucet that a script drains in one block.
 3. **Proof of read.** A claim carries an EIP-712 `ReadProof` signed by `readAttester`,
    certifying dwell time. The reader still submits the transaction, so the attester never
    custodies funds and cannot claim on a reader's behalf.
@@ -132,11 +136,17 @@ smart accounts.
 ## Deployed on GIWA Sepolia
 
 ```
-SyndixTreasury    0x5465f31a6155E3eCCcC35f4E5bDC0e287763B0ee
-SyndixArticleNFT  0xA0D49A6C4Ac081a2de9af2f422EdfffB8f41190e
-MockUpIdRegistry  0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d
-SyndixPaymaster   0x3B13186a1E4b1108eA5CB2f8853D84A2aeD71Cc5
+SyndixTreasury      0x5465f31a6155E3eCCcC35f4E5bDC0e287763B0ee
+SyndixArticleNFT    0xA0D49A6C4Ac081a2de9af2f422EdfffB8f41190e
+UpIdReaderRegistry  0xa316Bb7762c5689ec905b2dec2899Ded93557941  <- treasury points here
+SyndixPaymaster     0x3B13186a1E4b1108eA5CB2f8853D84A2aeD71Cc5
+MockUpIdRegistry    0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d  (superseded, still live)
 ```
+
+`SyndixTreasury.readerRegistry` is `UpIdReaderRegistry`, so claims gate on the **real**
+ecosystem registry. Consequence: the deployer wallet and any mock-named wallet can no
+longer claim — they hold no genuine `up.id`. Get one at `sepolia-playground.giwa.io`.
+Reverting is one `setReaderRegistry(0xA82EDb…)` call.
 
 Issues are published with funded pools and real reader claims settle. **The app
 bundles no article content** — `lib/onchain-issues.ts` reads the treasury index
