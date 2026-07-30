@@ -39,7 +39,6 @@ import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Mono } from "@/components/ui/mono";
 import { syndixTreasuryAbi } from "@/lib/abi";
-import { onchainArticleId } from "@/lib/onchain";
 import { UpIdClaim } from "@/components/reader/up-id-claim";
 import { flashblocksTransport } from "@/lib/wagmi";
 import {
@@ -53,6 +52,7 @@ import {
   shortenAddress,
 } from "@/lib/giwa";
 import type { Issue } from "@/lib/types";
+import type { ReadSessionState } from "@/lib/use-read-session";
 import {
   cn,
   formatEth,
@@ -63,7 +63,13 @@ import {
 } from "@/lib/utils";
 
 /** Dwell floor the attester would sign for. Deliberately conservative. */
-const MIN_DWELL_SECONDS = 15;
+/**
+ * Floor the contract itself enforces. The binding requirement is the read
+ * session's, which is set server-side and read off `session.requiredSeconds` -
+ * showing this constant as "the minimum" told readers 15s when the server
+ * wanted five minutes.
+ */
+const CONTRACT_MIN_DWELL_SECONDS = 15;
 
 const PRECONFIRM_MS = 187;
 const SEAL_MS = 1010;
@@ -90,7 +96,7 @@ type StepState = "todo" | "active" | "done" | "blocked";
 
 /**
  * A 32-byte hash shaped like a GIWA tx hash, derived deterministically from
- * the claim inputs. It is NOT a transaction — nothing is broadcast — and every
+ * the claim inputs. It is NOT a transaction - nothing is broadcast - and every
  * surface that shows it is required to say so.
  */
 function simulatedHash(seed: string): string {
@@ -187,7 +193,7 @@ function Step({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Wallet — isolated so the modal still renders without a provider    */
+/*  Wallet - isolated so the modal still renders without a provider    */
 /* ------------------------------------------------------------------ */
 
 function WalletIdentity({
@@ -259,12 +265,14 @@ export interface ClaimModalProps {
   open: boolean;
   onClose: () => void;
   dwellSeconds: number;
+  /** Server-measured read session. Its token is the only proof attest accepts. */
+  session: ReadSessionState;
   /** `live` is true when the hash is a real GIWA transaction. */
   onClaimed: (hash: string, live: boolean) => void;
 }
 
 /**
- * Mount this only while it is open — a fresh mount per open is what resets the
+ * Mount this only while it is open - a fresh mount per open is what resets the
  * flow, rather than an effect reaching back into state.
  */
 
@@ -273,6 +281,7 @@ export function ClaimModal({
   open,
   onClose,
   dwellSeconds,
+  session,
   onClaimed,
 }: ClaimModalProps): ReactElement | null {
   const titleId = useId();
@@ -289,7 +298,7 @@ export function ClaimModal({
   const [txHash, setTxHash] = useState<string | null>(null);
   const [claimError, setClaimError] = useState<string | null>(null);
   /**
-   * On-chain identity state. `verified` is the gate — it mirrors what the
+   * Onchain identity state. `verified` is the gate - it mirrors what the
    * treasury itself checks. `name` is a display label that may legitimately be
    * null for a verified reader, because the real up.id registry keeps labels
    * off-chain, so gating on it would lock out exactly the readers who hold a
@@ -311,7 +320,9 @@ export function ClaimModal({
   const identityReady = IS_LIVE_CHAIN
     ? Boolean(address) && identity.verified
     : Boolean(address) && nameValid;
-  const dwellReady = dwellSeconds >= MIN_DWELL_SECONDS;
+  // The server decides when the read counts. A local comparison here would be
+  // advisory only - attest re-judges the session regardless.
+  const dwellReady = session.ready;
   const running = stage !== "idle" && stage !== "sealed";
   const canClaim = identityReady && dwellReady && stage === "idle";
 
@@ -327,7 +338,7 @@ export function ClaimModal({
   /**
    * The dialog effect must run exactly once per open. `onClose` is usually an
    * inline arrow from the caller, and this component re-renders every second
-   * while dwell ticks — depending on it directly would tear the trap down and
+   * while dwell ticks - depending on it directly would tear the trap down and
    * yank focus back to the trigger on every tick.
    */
   const onCloseRef = useRef(onClose);
@@ -396,14 +407,12 @@ export function ClaimModal({
   const startOnChain = useCallback(async () => {
     if (!address) return;
 
-    // Publish order decides the on-chain id, so it is not interchangeable with
-    // the dataset id. Bail loudly rather than sign for the wrong article.
-    const articleId = onchainArticleId(issue.id);
-    if (articleId === undefined) {
-      setClaimError("This issue has not been published to GIWA Sepolia yet.");
-      setStage("failed");
-      return;
-    }
+    // `issue.id` is the SyndixTreasury article id - the adapter sets it from
+    // `articleId`, because every issue is read out of the treasury index. The
+    // old dataset-to-onchain id map only covered issues 1-6, so routing through
+    // it here made every article the agent has published since fail with
+    // "not published yet". Do not reintroduce it.
+    const articleId = issue.id;
 
     setClaimError(null);
     setStage("attesting");
@@ -415,7 +424,7 @@ export function ClaimModal({
         body: JSON.stringify({
           articleId,
           reader: address,
-          dwellSeconds,
+          token: session.token,
         }),
       });
 
@@ -476,7 +485,7 @@ export function ClaimModal({
       setClaimError(message.split("\n")[0]);
       setStage("failed");
     }
-  }, [address, issue.id, dwellSeconds, writeContractAsync, onClaimed]);
+  }, [address, issue.id, session.token, writeContractAsync, onClaimed]);
 
   const startSimulated = useCallback(() => {
     if (!address) return;
@@ -581,7 +590,7 @@ export function ClaimModal({
               strokeWidth={1.9}
             />
             <p className="text-[11.5px] leading-relaxed text-caution">
-              Simulated — contracts not yet deployed to GIWA Sepolia. Nothing below is
+              Simulated - contracts not yet deployed to GIWA Sepolia. Nothing below is
               signed, submitted or broadcast, and the resulting hash is fabricated.
             </p>
           </div>
@@ -608,7 +617,7 @@ export function ClaimModal({
                   <WalletIdentity onAddress={setAddress} />
                 ) : (
                   <p className="text-[12.5px] leading-relaxed text-caution">
-                    Wallet provider unavailable in this render — connect from the app
+                    Wallet provider unavailable in this render - connect from the app
                     shell to continue.
                   </p>
                 )}
@@ -660,7 +669,7 @@ export function ClaimModal({
                         <span className="font-mono text-ink-muted">
                           {normalized || "name.up.id"}
                         </span>{" "}
-                        — a Soul-Bound ENS subdomain of{" "}
+                        - a Soul-Bound ENS subdomain of{" "}
                         <span className="font-mono">up.id</span>, capped at one per
                         wallet. That cap is what makes the reward pool sybil-resistant.
                       </>
@@ -683,19 +692,24 @@ export function ClaimModal({
                   {dwellSeconds}s dwell
                 </Badge>
                 <span className="font-mono text-[11px] tabular-nums text-ink-faint">
-                  min {MIN_DWELL_SECONDS}s
+                  min {session.requiredSeconds || CONTRACT_MIN_DWELL_SECONDS}s
                 </span>
+                {session.requiredDepth < 1 ? (
+                  <Badge tone={session.depth >= session.requiredDepth ? "positive" : "caution"}>
+                    {Math.round(session.depth * 100)}% read
+                  </Badge>
+                ) : null}
               </div>
               {dwellReady ? null : (
                 <p className="mt-2 text-[11.5px] leading-relaxed text-caution">
-                  Keep reading — the attester will not sign below the dwell floor.
+                  Keep reading - the attester will not sign below the dwell floor.
                 </p>
               )}
             </Step>
 
             <Step index={3} title="Gas" icon={Fuel} state={stepState[3]}>
               <p className="text-[12.5px] leading-relaxed text-ink-muted">
-                You submit this transaction yourself and pay its gas — about{" "}
+                You submit this transaction yourself and pay its gas - about{" "}
                 <span className="font-mono tabular-nums">0.00000018 ETH</span> on
                 GIWA, roughly a{" "}
                 <span className="font-mono tabular-nums">166×</span> smaller number
@@ -757,7 +771,7 @@ export function ClaimModal({
                     </span>
                     {settled ? (
                       <Badge tone="positive" dot>
-                        On-chain
+                        Onchain
                       </Badge>
                     ) : (
                       <Badge tone="caution">Simulated</Badge>
@@ -779,7 +793,7 @@ export function ClaimModal({
                   <p className="mt-1.5 text-[11px] leading-relaxed text-ink-faint">
                     {settled
                       ? "Broadcast from your wallet and included on GIWA Sepolia. The explorer link above resolves."
-                      : "This hash was generated locally and never broadcast — the explorer will not find it."}
+                      : "This hash was generated locally and never broadcast - the explorer will not find it."}
                   </p>
                 </div>
               ) : null}
@@ -826,7 +840,9 @@ export function ClaimModal({
                 ? "Connect a wallet to continue."
                 : !nameValid
                   ? "Enter your up.id to continue."
-                  : `Read for ${MIN_DWELL_SECONDS - dwellSeconds}s more to continue.`}
+                  : session.depth < session.requiredDepth
+                    ? `Scroll through the whole issue to continue - ${Math.round(session.depth * 100)}% read.`
+                    : `Read for ${Math.max(0, session.requiredSeconds - dwellSeconds)}s more to continue.`}
             </p>
           ) : null}
         </footer>

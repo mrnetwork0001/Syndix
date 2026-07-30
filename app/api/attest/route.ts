@@ -13,8 +13,8 @@ import {
 } from "@/lib/attest";
 import { GIWA_RPC_HTTP, IS_LIVE_CHAIN, ZERO_ADDRESS, giwaSepolia } from "@/lib/giwa";
 import { syndixTreasuryAbi } from "@/lib/abi";
-import { ISSUES } from "@/lib/data/issues";
-import { issueIdForArticle } from "@/lib/onchain";
+import { readOnchainIssues } from "@/lib/onchain-issues";
+import { judgeSession } from "@/lib/read-session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,21 +23,27 @@ export const dynamic = "force-dynamic";
  * Issues the EIP-712 ReadProof that SyndixTreasury requires for a claim.
  *
  * The attester key signs; it never holds or moves funds, and the reader still
- * submits their own transaction. That split is deliberate — a compromised
+ * submits their own transaction. That split is deliberate - a compromised
  * attester can mint bogus proofs but cannot drain the treasury, and it cannot
  * claim on somebody else's behalf because `reader` is bound into the signature.
  *
- * HONEST LIMITATION: dwell time is reported by the client. This endpoint
- * bounds and sanity-checks it, and the contract enforces one claim per
- * identity, but it is not cryptographic proof that a human read the article.
- * Hardening that means server-side reading telemetry or a Dojang attestation,
- * and is out of scope for this build.
+ * Dwell is measured by this server, not reported by the client. The reader
+ * presents a signed read session (see lib/read-session.ts) whose elapsed time,
+ * heartbeat count and scroll depth this endpoint judges before it will sign.
+ *
+ * HONEST LIMITATION: this proves time and scrolling, not comprehension. A
+ * script that holds a session open and beats on a timer still qualifies. What
+ * it cannot do is claim instantly or in bulk - every reward costs the real
+ * wall-clock time asked for, and up.id caps it at one claim per human per
+ * article, so farming costs more than it pays. Proving a human actually read
+ * the words needs content-derived challenges, which is roadmap.
  */
 
 interface Body {
   articleId?: unknown;
   reader?: unknown;
-  dwellSeconds?: unknown;
+  /** Signed read session issued by /api/read/session. */
+  token?: unknown;
 }
 
 function bad(reason: string, status = 400) {
@@ -68,16 +74,25 @@ export async function POST(request: NextRequest) {
     return bad("Body must be JSON.");
   }
 
-  // `articleId` is the SyndixTreasury id, which publish order decides — not the
-  // dataset issue id. Resolve it back to an issue so we only ever attest for
-  // something we actually published.
+  // `articleId` is the SyndixTreasury id. The treasury is the only authority on
+  // what exists - an earlier version checked it against the bundled dataset,
+  // which listed issues 1-6 and therefore 404'd every article the agent has
+  // actually published since. The dataset is not the source of truth and must
+  // never gate a claim again.
   const articleId = Number(body.articleId);
   if (!Number.isInteger(articleId) || articleId <= 0) {
-    return bad("articleId must be a positive on-chain article id.");
+    return bad("articleId must be a positive onchain article id.");
   }
-  const issueId = issueIdForArticle(articleId);
-  if (issueId === undefined || !ISSUES.some((issue) => issue.id === issueId)) {
-    return bad(`Article ${articleId} is not a published Syndix issue.`, 404);
+  const index = await readOnchainIssues();
+  if (!index.ok) {
+    return bad(`Could not read the article index from GIWA: ${index.reason}`, 502);
+  }
+  const article = index.issues.find((i) => i.articleId === articleId);
+  if (!article) {
+    return bad(`Article ${articleId} does not exist on SyndixTreasury.`, 404);
+  }
+  if (!article.isActive) {
+    return bad(`Article ${articleId} is closed and no longer pays rewards.`, 409);
   }
 
   const reader = body.reader;
@@ -85,15 +100,23 @@ export async function POST(request: NextRequest) {
     return bad("reader must be a checksummed address.");
   }
 
-  const dwellSeconds = Math.floor(Number(body.dwellSeconds));
-  if (!Number.isFinite(dwellSeconds) || dwellSeconds < MIN_DWELL_SECONDS) {
+  // The session decides, not the caller. Its elapsed time comes from this
+  // server's clock, so `dwellSeconds` can no longer be asserted by a client.
+  const verdict = judgeSession(body.token, articleId);
+  if (!verdict.ok) {
+    return NextResponse.json(
+      { error: verdict.reason, dwellSeconds: verdict.dwellSeconds },
+      { status: 425 },
+    );
+  }
+  if (verdict.dwellSeconds < MIN_DWELL_SECONDS) {
     return bad(
-      `dwellSeconds must be at least ${MIN_DWELL_SECONDS} — the contract rejects anything shorter.`,
+      `The contract rejects anything shorter than ${MIN_DWELL_SECONDS}s.`,
     );
   }
   // Clamp rather than reject: a long, legitimate read should still settle, and
   // the contract only enforces a floor.
-  const dwell = Math.min(dwellSeconds, MAX_DWELL_SECONDS);
+  const dwell = Math.min(verdict.dwellSeconds, MAX_DWELL_SECONDS);
 
   const account = privateKeyToAccount(
     key.startsWith("0x") ? (key as `0x${string}`) : (`0x${key}` as `0x${string}`),

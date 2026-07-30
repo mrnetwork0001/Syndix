@@ -5,7 +5,6 @@ import {
   ArrowUpRight,
   Blocks,
   Bot,
-  CircleDashed,
   Clock,
   Cpu,
   FileCode2,
@@ -149,13 +148,9 @@ export function IssueHeader({ issue }: { issue: Issue }): ReactElement {
                 <CopyButton value={issue.mintTxHash} className="px-1" />
               </>
             ) : (
-              <>
-                <CircleDashed
-                  className="animate-slow-spin size-3.5 shrink-0 text-caution"
-                  strokeWidth={1.9}
-                />
-                <span className="text-[12px] text-ink-muted">Pending mint</span>
-              </>
+              // Published for certain - this issue was read from the treasury
+              // index. Only the log lookup for the hash came up empty.
+              <span className="text-[12px] text-ink-faint">Link unresolved</span>
             )}
           </Fact>
 
