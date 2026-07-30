@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
-import { GIWA_EXPLORER, GIWA_SEPOLIA_ID, IS_LIVE_CHAIN } from "@/lib/giwa";
+import { GIWA_EXPLORER } from "@/lib/giwa";
 
 const GITHUB_URL = "https://github.com/mrnetwork0001/Syndix";
 
@@ -126,24 +126,6 @@ export function Footer(): ReactElement {
           </nav>
         </div>
 
-        {/* The honesty rule needs a permanent home: what chain, and whether the
-            figures in this build come from it. Kept to one line. */}
-        <div className="mt-14 flex flex-col gap-2 border-t border-hairline pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-mono text-[11.5px] tracking-[0.04em] text-ink-faint">
-            GIWA Sepolia · {GIWA_SEPOLIA_ID} · testnet only
-          </p>
-          <p className="flex items-center gap-2 font-mono text-[11.5px] tracking-[0.04em] text-ink-faint">
-            <span
-              aria-hidden
-              className={
-                IS_LIVE_CHAIN
-                  ? "size-1.5 rounded-full bg-positive"
-                  : "size-1.5 rounded-full bg-caution"
-              }
-            />
-            {IS_LIVE_CHAIN ? "Contracts deployed" : "Simulated data"}
-          </p>
-        </div>
       </div>
     </footer>
   );

@@ -23,7 +23,6 @@ import {
   useConnect,
   useConnectors,
   useDisconnect,
-  useEnsName,
 } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,6 +32,7 @@ import {
   explorerAddress,
   shortenAddress,
 } from "@/lib/giwa";
+import { useUpIdName } from "@/lib/use-up-id";
 import { cn, formatEth, seededRandom } from "@/lib/utils";
 
 const WALLET_HELP_URL = "https://docs.giwa.io/get-started/connect-to-giwa";
@@ -50,10 +50,9 @@ export function ConnectButton(): ReactElement {
   const { mutate: connect, isPending, error: connectError } = useConnect();
   const { disconnect } = useDisconnect();
 
-  const { data: ensName } = useEnsName({
-    address,
-    query: { enabled: Boolean(address), retry: false, staleTime: Infinity },
-  });
+  // Not useEnsName: GIWA Sepolia has no ENS Universal Resolver, so that hook
+  // never resolves and every wallet falls back to a hex address.
+  const { name: upIdName, verified } = useUpIdName(address);
 
   const { data: balance } = useBalance({
     address,
@@ -183,8 +182,10 @@ export function ConnectButton(): ReactElement {
     );
   }
 
-  const upId = ensName?.endsWith(UP_ID_SUFFIX) ? ensName : null;
-  const label = ensName ?? shortenAddress(address);
+  const upId = upIdName?.endsWith(UP_ID_SUFFIX) ? upIdName : null;
+  // A verified reader with no resolvable label still gets a truthful badge
+  // rather than a blank — the name lives off-chain and the lookup can fail.
+  const label = upId ?? shortenAddress(address);
   const gradient = addressGradient(address);
 
   return (
@@ -210,11 +211,7 @@ export function ConnectButton(): ReactElement {
         <span className="min-w-0 truncate text-[13px] font-medium text-ink">
           {label}
         </span>
-        {balance ? (
-          <span className="hidden font-mono text-[11.5px] tabular-nums text-ink-faint md:inline">
-            {formatEth(balance.value, 3)}
-          </span>
-        ) : null}
+        {/* Balance lives in the dropdown only — the trigger names the account. */}
         <ChevronDown className="size-3.5 shrink-0 text-ink-faint" strokeWidth={2} />
       </button>
 
@@ -222,7 +219,11 @@ export function ConnectButton(): ReactElement {
         <Dropdown>
           <div className="px-3 pt-3 pb-2.5">
             <p className="text-[11px] tracking-[0.14em] text-ink-faint uppercase">
-              {upId ? "Upbit Web3 Name" : "Connected account"}
+              {upId
+                ? "Upbit Web3 Name"
+                : verified
+                  ? "Verified · up.id held"
+                  : "Connected account"}
             </p>
             <p className="mt-1.5 truncate text-sm font-semibold text-ink">
               {label}

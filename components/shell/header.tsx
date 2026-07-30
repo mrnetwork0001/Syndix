@@ -35,24 +35,40 @@ export function Header(): ReactElement {
   return (
     <header className="glass sticky top-0 z-50 border-x-0! border-t-0!">
       <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center gap-1.5 px-4 sm:gap-3 sm:px-6">
-        <Link
-          href="/"
-          className="flex shrink-0 items-center gap-2 rounded-[10px] transition-opacity duration-200 hover:opacity-80"
-          aria-label="Syndix — home"
+        {/* On wallet routes both flanks get an equal flex basis, which is what
+            actually centres the nav between them — `mx-auto` would only centre
+            it in the leftover space and drift as the wallet label changes
+            width. Without wallet chrome there is no right flank to balance
+            against, so the nav keeps its right alignment. */}
+        <div
+          className={cn(
+            "flex min-w-0 items-center gap-1.5 sm:gap-3",
+            showWallet && "flex-1",
+          )}
         >
-          <SyndixMark />
-          <span className="hidden text-[15px] font-semibold tracking-[-0.028em] text-ink sm:inline">
-            Syndix
-          </span>
-        </Link>
+          <Link
+            href="/"
+            className="flex shrink-0 items-center gap-2 rounded-[10px] transition-opacity duration-200 hover:opacity-80"
+            aria-label="Syndix — home"
+          >
+            <SyndixMark />
+            <span className="hidden text-[15px] font-semibold tracking-[-0.028em] text-ink sm:inline">
+              Syndix
+            </span>
+          </Link>
 
-        <span
-          aria-hidden
-          className="hidden h-4 w-px shrink-0 bg-hairline-strong sm:block"
-        />
+          <span
+            aria-hidden
+            className="hidden h-4 w-px shrink-0 bg-hairline-strong sm:block"
+          />
+        </div>
 
-        {/* ml-auto pushes the nav and everything after it to the right edge. */}
-        <nav className="ml-auto flex min-w-0 items-center gap-0.5">
+        <nav
+          className={cn(
+            "flex min-w-0 items-center gap-0.5",
+            !showWallet && "ml-auto",
+          )}
+        >
           {NAV.map((item) => {
             const active = item.matches.some((m) =>
               m === "/" ? pathname === "/" : pathname.startsWith(m),
@@ -90,7 +106,7 @@ export function Header(): ReactElement {
         </nav>
 
         {showWallet ? (
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex flex-1 items-center justify-end gap-2">
             <NetworkBadge />
             <ConnectButton />
           </div>
