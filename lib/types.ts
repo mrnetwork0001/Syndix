@@ -83,6 +83,15 @@ export interface Sponsor {
 }
 
 export interface GenerationTrace {
+  /**
+   * Where the issue actually came from.
+   *
+   * `editorial-seed` issues were written by hand for the launch dataset — they
+   * have no model, no token count and no cost, and every surface must avoid
+   * attributing them to a pipeline run. `agent` issues really were produced by
+   * the ingestion agent, so their telemetry is measured.
+   */
+  provenance: "editorial-seed" | "agent";
   model: string;
   imageModel: string;
   /** Milliseconds of wall-clock for the full pipeline. */

@@ -60,22 +60,38 @@ export function ExecSummary({ issue }: { issue: Issue }): ReactElement {
         ))}
       </ul>
 
+      {/* Only an agent run has a trace. Seeded issues were written by hand, so
+          printing a model, cost and token count for them would be inventing
+          telemetry for work no pipeline did. */}
       <footer className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-hairline px-5 py-3">
-        <span className="text-[11px] tracking-[0.14em] text-ink-faint uppercase">
-          Run trace
-        </span>
-        <span className="font-mono text-[11px] tabular-nums text-ink-muted">
-          {gen.model}
-        </span>
-        <span className="font-mono text-[11px] tabular-nums text-ink-faint">
-          ${gen.costUsd.toFixed(4)}
-        </span>
-        <span className="font-mono text-[11px] tabular-nums text-ink-faint">
-          {formatMs(gen.latencyMs)}
-        </span>
-        <span className="font-mono text-[11px] tabular-nums text-ink-faint">
-          {compact(gen.inputTokens)} in / {compact(gen.outputTokens)} out
-        </span>
+        {gen.provenance === "agent" ? (
+          <>
+            <span className="text-[11px] tracking-[0.14em] text-ink-faint uppercase">
+              Run trace
+            </span>
+            <span className="font-mono text-[11px] tabular-nums text-ink-muted">
+              {gen.model}
+            </span>
+            <span className="font-mono text-[11px] tabular-nums text-ink-faint">
+              ${gen.costUsd.toFixed(4)}
+            </span>
+            <span className="font-mono text-[11px] tabular-nums text-ink-faint">
+              {formatMs(gen.latencyMs)}
+            </span>
+            <span className="font-mono text-[11px] tabular-nums text-ink-faint">
+              {compact(gen.inputTokens)} in / {compact(gen.outputTokens)} out
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="text-[11px] tracking-[0.14em] text-ink-faint uppercase">
+              Provenance
+            </span>
+            <span className="text-[11.5px] text-ink-muted">
+              Editorial seed — written by hand, no generation run to report
+            </span>
+          </>
+        )}
       </footer>
     </Panel>
   );

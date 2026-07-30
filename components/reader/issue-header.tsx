@@ -92,13 +92,25 @@ export function IssueHeader({ issue }: { issue: Issue }): ReactElement {
                 <span className="grid size-6 shrink-0 place-items-center rounded-full border border-hairline bg-elevated">
                   <Bot className="size-3.5 text-accent" strokeWidth={1.9} />
                 </span>
-                Written by <span className="font-medium text-ink">Syndix Agent</span>
+                {issue.generation.provenance === "agent" ? (
+                  <>
+                    Written by{" "}
+                    <span className="font-medium text-ink">Syndix Agent</span>
+                  </>
+                ) : (
+                  <>
+                    Written for the{" "}
+                    <span className="font-medium text-ink">editorial seed</span>
+                  </>
+                )}
               </span>
 
-              <span className="flex items-center gap-1.5">
-                <Cpu className="size-3.5 text-ink-faint" strokeWidth={1.9} />
-                <Mono className="text-[11.5px]">{issue.generation.model}</Mono>
-              </span>
+              {issue.generation.provenance === "agent" ? (
+                <span className="flex items-center gap-1.5">
+                  <Cpu className="size-3.5 text-ink-faint" strokeWidth={1.9} />
+                  <Mono className="text-[11.5px]">{issue.generation.model}</Mono>
+                </span>
+              ) : null}
 
               <span className="flex items-center gap-1.5">
                 <time dateTime={issue.publishedAt}>{formatDate(issue.publishedAt)}</time>
@@ -165,9 +177,8 @@ export function IssueHeader({ issue }: { issue: Issue }): ReactElement {
       </div>
 
       <p className="mx-auto w-full max-w-7xl px-5 pt-2.5 text-[11px] leading-relaxed text-ink-faint sm:px-8">
-        Protocol telemetry on this page is simulated — the Syndix contracts are not yet
-        deployed to GIWA Sepolia, so the hashes above are shaped correctly but were never
-        broadcast. The GIWA network facts inside the article are real.
+        The content URI, mint transaction and block above are real: this issue was
+        published to SyndixTreasury on GIWA Sepolia and the explorer links resolve.
       </p>
     </header>
   );

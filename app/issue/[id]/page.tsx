@@ -216,11 +216,25 @@ export default async function IssuePage({ params }: PageProps): Promise<ReactEle
 
             <footer className="mt-14 border-t border-hairline pt-6">
               <p className="text-[12px] leading-relaxed text-ink-faint">
-                Issue #{issue.id} was drafted, scored, illustrated and pinned by the
-                Syndix agent using {issue.generation.model}. Pipeline stages:{" "}
-                <span className="font-mono">{issue.generation.stages.join(" → ")}</span>.
-                Reward settlement is simulated until the Syndix contracts are deployed to
-                GIWA Sepolia.
+                {issue.generation.provenance === "agent" ? (
+                  <>
+                    Issue #{issue.id} was drafted, scored, illustrated and pinned by
+                    the Syndix agent using {issue.generation.model}. Pipeline stages:{" "}
+                    <span className="font-mono">
+                      {issue.generation.stages.join(" → ")}
+                    </span>
+                    .
+                  </>
+                ) : (
+                  <>
+                    Issue #{issue.id} was written for the Syndix editorial seed — the
+                    launch set that existed before the ingestion agent ran — so it
+                    carries no model attribution or generation telemetry. Issues
+                    produced by the agent report both. Its cover art is generated
+                    deterministically from a seed, and it is published on-chain with a
+                    funded reward pool like any other issue.
+                  </>
+                )}
               </p>
             </footer>
           </article>

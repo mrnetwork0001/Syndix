@@ -530,25 +530,35 @@ Gasless on GIWA is not a feature you enable. It is a contract you deploy, a budg
 
 const BODY_1 = `Syndix is an AI newsroom that writes, illustrates, scores, pins and mints its own issues, then pays readers a few cents each for finishing them. It is a reasonable demo. Whether it is a reasonable *business* is an arithmetic question, and we would rather publish the arithmetic than the vibe.
 
-Here is the full cost of one issue, measured on our own runs, in the currency we actually pay.
+Here is the cost of one issue. The on-chain lines are measured from our own
+transactions on GIWA Sepolia; the model lines are estimates at current API
+pricing, and are labelled as such rather than dressed up as telemetry.
 
 ## Cost of goods, per issue
 
 | Line item | Cost | Notes |
 | --- | --- | --- |
-| Signal ingestion (x402, metered) | $0.18 | ~60 paid calls at ~$0.003 |
-| Synthesis — \`claude-opus-5\` | $1.31 | ~52k input, ~6.5k output tokens |
-| Scoring pass (subject lines, sentiment) | $0.09 | Short context, many candidates |
-| Illustration — \`syndix-diffusion-v2\` | $0.22 | One cover, three rejected |
-| IPFS pinning | $0.01 | ~40 KB markdown + metadata |
-| Mint transaction (GIWA Sepolia) | <$0.01 | Dominated by the L1 data component |
-| **Total COGS** | **~$1.82** | Excluding reward pool |
+| Signal ingestion (x402, metered) | ~$0.18 | estimate, ~60 paid calls |
+| Synthesis + scoring (OpenAI) | ~$0.10 | estimate; one structured completion |
+| Illustration | **$0.00** | deterministic SVG from a seed — no model, no inference |
+| IPFS pinning (Pinata) | ~$0.00 | ~40 KB of markdown and metadata, free tier |
+| Publish transaction | **$0.000004** | measured: 0.0000066 ETH deployed all three contracts |
+| **Total** | **~$0.28** | excluding the reward pool |
 
-That number is small enough to be uninteresting, which is the point. The interesting number is the one below it.
+The illustration line is worth pausing on. Generative cover art does not need a
+diffusion model: the covers on this feed are SVG derived deterministically from
+the issue's seed, so they cost nothing, render instantly, and are identical on
+every load. Reaching for inference there would have been a cost line and a
+latency line in exchange for nothing a reader can perceive.
 
 ## Cost of readers
 
-We pay **0.00003 ETH** per reader who finishes an issue — about $0.10 at $3,200/ETH, or roughly ₩130. A pool sized for 1,200 claims commits **0.036 ETH**, about $115.
+We pay **0.00003 ETH** per reader who finishes an issue. At the time of writing
+that is roughly **$0.06**, or about **₩83** — and it is worth being precise about
+this, because an earlier draft of this issue quoted $0.10 against a stale
+$3,200/ETH assumption and overstated the payout by two thirds. The figures in
+the app are now read from a live price feed. A pool sized for 1,200 claims
+commits **0.036 ETH**.
 
 ### The arithmetic
 
@@ -682,12 +692,13 @@ export const ISSUES: Issue[] = [
       "0x1691ecd249eeb75f38e2b457a8dc1e3d457d96bcf9936e8d4804143205baa6f0",
     mintBlock: 31963625,
     generation: {
-      model: "claude-opus-5",
-      imageModel: "syndix-diffusion-v2",
-      latencyMs: 46820,
-      inputTokens: 52140,
-      outputTokens: 6480,
-      costUsd: 1.8163,
+      provenance: "editorial-seed",
+      model: "editorial-seed",
+      imageModel: "deterministic-svg",
+      latencyMs: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      costUsd: 0,
       stages: [
         "ingest",
         "dedupe",
@@ -777,12 +788,13 @@ export const ISSUES: Issue[] = [
     claimedCount: 0,
     readerCount: 168,
     generation: {
-      model: "claude-opus-5",
-      imageModel: "syndix-diffusion-v2",
-      latencyMs: 61340,
-      inputTokens: 47880,
-      outputTokens: 6120,
-      costUsd: 1.7016,
+      provenance: "editorial-seed",
+      model: "editorial-seed",
+      imageModel: "deterministic-svg",
+      latencyMs: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      costUsd: 0,
       stages: ["ingest", "dedupe", "synthesize", "score", "illustrate", "pin"],
     },
   },
@@ -874,12 +886,13 @@ export const ISSUES: Issue[] = [
       "0x9a592bbfb89b6ff7467f89cf8111511f14a37f997c0c570b7a6fe1ca52dfad8e",
     mintBlock: 31963619,
     generation: {
-      model: "claude-opus-5",
-      imageModel: "syndix-diffusion-v2",
-      latencyMs: 71260,
-      inputTokens: 58920,
-      outputTokens: 7340,
-      costUsd: 2.1024,
+      provenance: "editorial-seed",
+      model: "editorial-seed",
+      imageModel: "deterministic-svg",
+      latencyMs: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      costUsd: 0,
       stages: [
         "ingest",
         "dedupe",
@@ -969,12 +982,13 @@ export const ISSUES: Issue[] = [
       "0xaa614edbd2a9f3e2cb2ea899c1182e63f4245432a520eaf5b311ddc0b5531a7d",
     mintBlock: 31963537,
     generation: {
-      model: "claude-opus-5",
-      imageModel: "syndix-diffusion-v2",
-      latencyMs: 68410,
-      inputTokens: 55340,
-      outputTokens: 7020,
-      costUsd: 1.9800,
+      provenance: "editorial-seed",
+      model: "editorial-seed",
+      imageModel: "deterministic-svg",
+      latencyMs: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      costUsd: 0,
       stages: [
         "ingest",
         "dedupe",
@@ -1065,12 +1079,13 @@ export const ISSUES: Issue[] = [
     mintBlock: 31963615,
     sponsor: MARUNODE,
     generation: {
-      model: "claude-opus-5",
-      imageModel: "syndix-diffusion-v2",
-      latencyMs: 39750,
-      inputTokens: 44210,
-      outputTokens: 6640,
-      costUsd: 1.6432,
+      provenance: "editorial-seed",
+      model: "editorial-seed",
+      imageModel: "deterministic-svg",
+      latencyMs: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      costUsd: 0,
       stages: [
         "ingest",
         "dedupe",
@@ -1160,12 +1175,13 @@ export const ISSUES: Issue[] = [
       "0x12c80256d96199c380d78e483e2c7cb70b11ceed47787f447c96191864f9c724",
     mintBlock: 31963531,
     generation: {
-      model: "claude-opus-5",
-      imageModel: "syndix-diffusion-v2",
-      latencyMs: 33180,
-      inputTokens: 41060,
-      outputTokens: 5880,
-      costUsd: 1.5099,
+      provenance: "editorial-seed",
+      model: "editorial-seed",
+      imageModel: "deterministic-svg",
+      latencyMs: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      costUsd: 0,
       stages: [
         "ingest",
         "dedupe",

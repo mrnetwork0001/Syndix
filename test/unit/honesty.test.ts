@@ -41,6 +41,33 @@ describe("dataset integrity", () => {
     );
   });
 
+  it("never attributes a seeded issue to a model or a generation run", () => {
+    for (const issue of ISSUES) {
+      const gen = issue.generation;
+      if (gen.provenance !== "editorial-seed") continue;
+      // These issues were written by hand. Reporting a model, a token count or
+      // a dollar cost for them is inventing telemetry.
+      expect(gen.costUsd, `issue ${issue.id} claims a cost`).toBe(0);
+      expect(gen.inputTokens, `issue ${issue.id} claims input tokens`).toBe(0);
+      expect(gen.outputTokens, `issue ${issue.id} claims output tokens`).toBe(0);
+      expect(gen.latencyMs, `issue ${issue.id} claims a latency`).toBe(0);
+      expect(gen.model).toBe("editorial-seed");
+    }
+  });
+
+  it("names no model that is not actually used, anywhere in the dataset", () => {
+    const retired = [/claude-opus/i, /anthropic/i, /syndix-diffusion/i];
+    for (const issue of ISSUES) {
+      const haystack = `${issue.body} ${JSON.stringify(issue.generation)}`;
+      for (const pattern of retired) {
+        expect(
+          pattern.test(haystack),
+          `issue ${issue.id} still references ${pattern}`,
+        ).toBe(false);
+      }
+    }
+  });
+
   it("never writes the giwa.id namespace, which does not exist", () => {
     for (const issue of ISSUES) {
       const offenders = issue.body.match(/[a-z0-9]+\.giwa\.id/g) ?? [];
