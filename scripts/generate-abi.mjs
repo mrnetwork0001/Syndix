@@ -5,10 +5,10 @@ import { readFileSync, writeFileSync } from "node:fs";
  * Run via `npm run abi` (which builds first).
  */
 
-const CONTRACTS = ["SyndixTreasury", "SyndixArticleNFT", "MockUpIdRegistry"];
+const CONTRACTS = ["SyndixTreasury", "SyndixArticleNFT", "UpIdReaderRegistry"];
 
 const header = `/**
- * Auto-generated from \\\`forge build\\\` artifacts — do not hand-edit.
+ * Auto-generated from \\\`forge build\\\` artifacts - do not hand-edit.
  * Regenerate with: npm run abi
  *
  * Exported \\\`as const\\\` so viem/wagmi infer argument and return types
@@ -25,7 +25,7 @@ for (const name of CONTRACTS) {
   try {
     abi = JSON.parse(readFileSync(artifactPath, "utf8")).abi;
   } catch {
-    console.error(`Missing artifact ${artifactPath} — run \`forge build\` first.`);
+    console.error(`Missing artifact ${artifactPath} - run \`forge build\` first.`);
     process.exit(1);
   }
   const varName = `${name.charAt(0).toLowerCase()}${name.slice(1)}Abi`;

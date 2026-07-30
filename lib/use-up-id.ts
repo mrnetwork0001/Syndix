@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useReadContract } from "wagmi";
-import { mockUpIdRegistryAbi, syndixTreasuryAbi } from "./abi";
+import { syndixTreasuryAbi, upIdReaderRegistryAbi } from "./abi";
 import {
   SYNDIX_CONTRACTS,
   ZERO_ADDRESS,
@@ -11,17 +11,21 @@ import {
 
 export interface UpIdIdentity {
   /**
-   * On-chain answer to the only question that authorises anything: does this
+   * Onchain answer to the only question that authorises anything: does this
    * address hold a verified identity? `undefined` while unknown.
    */
   verified: boolean | undefined;
   /**
-   * Display label, or null. Null does NOT mean unverified — the real registry
+   * Display label, or null. Null does NOT mean unverified - the real registry
    * keeps labels off-chain, so a verified reader can legitimately have no
    * resolvable name. Never gate on this.
    */
   name: string | null;
-  /** True when the treasury is gating on the real ecosystem registry. */
+  /**
+   * True when the treasury is gating on the real ecosystem registry. False
+   * means some other IReaderRegistry is bound, which the UI must disclose -
+   * the sybil guarantee is only as good as the registry behind it.
+   */
   isRealRegistry: boolean;
   /** The registry the treasury currently points at, if any. */
   registryAddress: `0x${string}` | undefined;
@@ -36,13 +40,12 @@ export interface UpIdIdentity {
  * has no ENS Universal Resolver deployed at the address viem expects, so that
  * hook fails and every wallet falls back to a raw hex address.
  *
- * Two registries are supported because both are live and the treasury decides
- * at runtime which one binds:
- *
- *   - MockUpIdRegistry stores the label on chain, so `nameOf` answers directly.
- *   - The real UpnameRegistry does not — tokenId is an ENS namehash and the
- *     contract is not enumerable — so the label comes from token metadata via
- *     `/api/up-id/:address`.
+ * The label has two possible sources because `IReaderRegistry.nameOf` is not
+ * guaranteed to answer. The live UpnameRegistry keeps no label onchain -
+ * tokenId is an ENS namehash and the contract is not enumerable - so the
+ * adapter returns an empty string and the label comes from token metadata via
+ * `/api/up-id/:address`. A registry that does store one answers from `nameOf`
+ * directly, so both are read and the first non-empty wins.
  *
  * Verification is always read from the contract; only the label ever touches
  * the network indirectly.
@@ -66,7 +69,7 @@ export function useUpIdName(address: `0x${string}` | undefined): UpIdIdentity {
 
   const { data: verified, refetch: refetchVerified } = useReadContract({
     address: registryAddress,
-    abi: mockUpIdRegistryAbi,
+    abi: upIdReaderRegistryAbi,
     functionName: "isVerified",
     args: address ? [address] : undefined,
     query: { enabled: Boolean(registryAddress && address) },
@@ -74,7 +77,7 @@ export function useUpIdName(address: `0x${string}` | undefined): UpIdIdentity {
 
   const { data: onchainName, refetch: refetchName } = useReadContract({
     address: registryAddress,
-    abi: mockUpIdRegistryAbi,
+    abi: upIdReaderRegistryAbi,
     functionName: "nameOf",
     args: address ? [address] : undefined,
     query: { enabled: Boolean(registryAddress && address && verified) },

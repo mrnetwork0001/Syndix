@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {Script, console} from "forge-std/Script.sol";
 import {SyndixTreasury} from "../contracts/SyndixTreasury.sol";
 import {SyndixArticleNFT} from "../contracts/SyndixArticleNFT.sol";
-import {MockUpIdRegistry} from "../contracts/mocks/MockUpIdRegistry.sol";
+import {UpIdReaderRegistry, IUpnameRegistry} from "../contracts/UpIdReaderRegistry.sol";
 import {IReaderRegistry} from "../contracts/interfaces/IReaderRegistry.sol";
 
 /**
@@ -22,11 +22,18 @@ import {IReaderRegistry} from "../contracts/interfaces/IReaderRegistry.sol";
  *                        Defaults to the deployer, which is fine for a testnet
  *                        demo but should be a separate hot key in production —
  *                        it is the one component that must live in the API.
- *   READER_REGISTRY      optional; the live up.id / Dojang resolver. When unset,
- *                        a MockUpIdRegistry is deployed so the sybil gate still
- *                        has something to enforce against on testnet.
+ *   READER_REGISTRY      optional; an existing IReaderRegistry to reuse. When
+ *                        unset, a UpIdReaderRegistry is deployed over the live
+ *                        Upbit Web3 Names registry, so the sybil gate is the
+ *                        real ecosystem one by default rather than a mock.
+ *   UPNAME_REGISTRY      optional; the Upbit Web3 Names ERC-721 the adapter
+ *                        reads. Defaults to the GIWA Sepolia deployment.
  */
 contract Deploy is Script {
+    /// @dev Upbit Web3 Names (UPNAME) on GIWA Sepolia - the ecosystem registry.
+    address internal constant UPNAME_SEPOLIA =
+        0x091D00004f21eb2Fc30964A8a4995692d9b49628;
+
     function run() external {
         uint256 deployerKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerKey);
@@ -38,10 +45,12 @@ contract Deploy is Script {
         vm.startBroadcast(deployerKey);
 
         if (registryAddr == address(0)) {
-            MockUpIdRegistry mock = new MockUpIdRegistry(owner);
-            registryAddr = address(mock);
-            console.log("MockUpIdRegistry  ", registryAddr);
-            console.log("  -> testnet stand-in for the up.id resolver");
+            address upname = vm.envOr("UPNAME_REGISTRY", UPNAME_SEPOLIA);
+            UpIdReaderRegistry adapter =
+                new UpIdReaderRegistry(IUpnameRegistry(upname));
+            registryAddr = address(adapter);
+            console.log("UpIdReaderRegistry", registryAddr);
+            console.log("  -> gates on the real Upbit Web3 Names registry");
         } else {
             console.log("ReaderRegistry    ", registryAddr);
         }
