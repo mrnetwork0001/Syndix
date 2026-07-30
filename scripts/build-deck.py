@@ -178,7 +178,7 @@ box(s, M, Inches(4.95), Inches(9.2), Inches(1.0),
     "chain state. Every verified human who reads one is paid in ETH.",
     size=17, color=INK_MUTED, spacing=1.4)
 box(s, M, Inches(6.25), Inches(11), Inches(0.4),
-    f"GIWA GASOK  ·  Track 04 AI/Web3 + Track 02 Consumer/Social  ·  chain 91342  ·  syndix.xyz",
+    f"GIWA GASOK  ·  Track 03 GIWA-Native Ideas  ·  chain 91342  ·  syndix.xyz",
     size=12, color=INK_FAINT, font=MONO)
 
 # 02 — problem

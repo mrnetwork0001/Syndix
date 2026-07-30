@@ -104,7 +104,7 @@ export default async function TechDoc(): Promise<ReactElement> {
             Syndix
           </h1>
           <p className="font-mono text-[10.5px] text-ink-faint">
-            GIWA GASOK · chain {GIWA_SEPOLIA_ID} · syndix.xyz
+            GIWA GASOK · Track 03 GIWA-Native · chain {GIWA_SEPOLIA_ID} · syndix.xyz
           </p>
         </div>
         <p className="doc-head-lead mt-1.5 text-[12.5px] leading-[1.55] text-ink-muted">

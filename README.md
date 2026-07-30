@@ -7,8 +7,9 @@ newsletter issue with a funded reward pool, and settles a micro-reward to every 
 reader who actually reads it. Machine buyers can pay per request for the raw feed over
 HTTP 402.
 
-Built for the **GIWA GASOK** accelerator, Track 04 (AI / Web3) and Track 02 (Consumer /
-Social). GIWA is the OP Stack Ethereum L2 built by Dunamu, Upbit's parent company.
+Built for the **GIWA GASOK** accelerator, **Track 03 (GIWA-Native Ideas)**, with Track 02
+(Consumer / Social) as the secondary. GIWA is the OP Stack Ethereum L2 built by Dunamu,
+Upbit's parent company.
 
 ---
 
