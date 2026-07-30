@@ -14,6 +14,7 @@ import { ScorePanel } from "@/components/reader/score-panel";
 import { SignalList } from "@/components/reader/signal-list";
 import { readOnchainIssues } from "@/lib/onchain-issues";
 import { toRenderableIssue } from "@/lib/issue-adapter";
+import { readPublishIndex } from "@/lib/publish-tx";
 import { explorerBlock, explorerTx } from "@/lib/giwa";
 import type { Issue } from "@/lib/types";
 import { formatEth, formatInt, formatKrw, formatUsd, shortHash } from "@/lib/utils";
@@ -25,25 +26,30 @@ interface PageProps {
 // The article index lives on chain and changes when the agent publishes, so
 // these pages cannot be prerendered at build time. 60s matches the loader cache.
 export const revalidate = 60;
+/** Chain reads plus IPFS fetches on a cold instance need more than the default. */
+export const maxDuration = 60;
 
 /**
  * Resolves an issue from the treasury by article id.
  *
  * Returns null both when the article does not exist and when it exists but its
- * pinned body never resolved — the reader has nothing to show in either case,
+ * pinned body never resolved - the reader has nothing to show in either case,
  * and rendering a titled page with no content would be worse than a 404.
  */
 async function loadIssue(id: string): Promise<Issue | null> {
   const articleId = Number(id);
   if (!Number.isInteger(articleId) || articleId <= 0) return null;
 
-  const onchain = await readOnchainIssues();
+  const [onchain, publishIndex] = await Promise.all([
+    readOnchainIssues(),
+    readPublishIndex(),
+  ]);
   if (!onchain.ok) return null;
 
   const article = onchain.issues.find((i) => i.articleId === articleId);
   if (!article || !article.isActive) return null;
 
-  return toRenderableIssue(article);
+  return toRenderableIssue(article, publishIndex.get(article.articleId));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -95,7 +101,20 @@ function RecordRow({
   );
 }
 
-/** The rail's on-chain facts: everything the protocol would record for this issue. */
+/**
+ * The rail's onchain facts.
+ *
+ * Every issue rendered here was read out of the treasury index, so it is
+ * published by definition - that is how it got here. An earlier version keyed
+ * the badge off `mintTxHash`, which the adapter deliberately leaves unset
+ * because `listArticles()` returns the stored struct and a contract cannot
+ * record the hash of the transaction currently executing. The result was a
+ * genuinely onchain article badged "Not published".
+ *
+ * The hash is recovered from the `ArticlePublished` log instead. When that
+ * lookup fails the row says the link is unresolved, which is the honest
+ * statement - the article's presence on chain was never in question.
+ */
 function ProtocolRecord({ issue }: { issue: Issue }): ReactElement {
   const remaining =
     BigInt(issue.rewardPoolWei) -
@@ -105,21 +124,13 @@ function ProtocolRecord({ issue }: { issue: Issue }): ReactElement {
   return (
     <Panel className="overflow-hidden">
       <PanelHeader
-        title="On-chain record"
-        description={
-          issue.mintTxHash
-            ? "What SyndixTreasury holds for this issue on GIWA Sepolia."
-            : "What SyndixTreasury will hold once this issue is published."
-        }
+        title="Onchain record"
+        description="What SyndixTreasury holds for this issue on GIWA Sepolia."
         icon={Landmark}
         action={
-          issue.mintTxHash ? (
-            <Badge tone="positive" dot>
-              On-chain
-            </Badge>
-          ) : (
-            <Badge tone="caution">Not published</Badge>
-          )
+          <Badge tone="positive" dot>
+            Onchain
+          </Badge>
         }
       />
 
@@ -145,7 +156,9 @@ function ProtocolRecord({ issue }: { issue: Issue }): ReactElement {
               <CopyButton value={issue.mintTxHash} className="px-1" />
             </>
           ) : (
-            <span className="text-[12px] text-caution">Pending mint</span>
+            <span className="text-[12px] text-ink-faint">
+              Link unresolved
+            </span>
           )}
         </RecordRow>
 
@@ -260,11 +273,11 @@ export default async function IssuePage({ params }: PageProps): Promise<ReactEle
                   </>
                 ) : (
                   <>
-                    Issue #{issue.id} was written for the Syndix editorial seed — the
-                    launch set that existed before the ingestion agent ran — so it
+                    Issue #{issue.id} was written for the Syndix editorial seed - the
+                    launch set that existed before the ingestion agent ran - so it
                     carries no model attribution or generation telemetry. Issues
                     produced by the agent report both. Its cover art is generated
-                    deterministically from a seed, and it is published on-chain with a
+                    deterministically from a seed, and it is published onchain with a
                     funded reward pool like any other issue.
                   </>
                 )}

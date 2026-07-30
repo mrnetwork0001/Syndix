@@ -1,11 +1,12 @@
 import type { Issue, TrackId } from "./types";
 import type { OnchainIssue } from "./onchain-issues";
+import type { PublishIndex, PublishRecord } from "./publish-tx";
 
 /**
- * Turns an on-chain article + its pinned metadata into the `Issue` shape the
+ * Turns an onchain article + its pinned metadata into the `Issue` shape the
  * reader UI renders.
  *
- * The treasury stores only what it needs to settle rewards — id, title,
+ * The treasury stores only what it needs to settle rewards - id, title,
  * contentURI, pool, claims. Everything editorial lives in the pinned JSON. This
  * is the seam between the two, and it is deliberately conservative: anything the
  * chain and IPFS cannot tell us is left empty rather than invented, because
@@ -49,7 +50,35 @@ function sentiment(issue: OnchainIssue): "bullish" | "neutral" | "cautious" {
  *          Callers decide whether to show the record without content or drop
  *          it; this function will not fabricate a body.
  */
-export function toRenderableIssue(issue: OnchainIssue): Issue | null {
+/**
+ * House typography, applied to text that arrives from IPFS.
+ *
+ * Article bodies are pinned content-addressed, so the CID the treasury records
+ * is a hash of the exact bytes - editing the published text would change the
+ * CID and orphan the onchain record. Older issues were written before the
+ * house style ("-" over an em dash, "onchain" over "on-chain"), so the
+ * substitution happens at render time instead.
+ *
+ * Typographic only. It never changes a number, a claim, or a meaning, and the
+ * canonical bytes behind the Content URI shown on the page are untouched -
+ * anyone fetching the CID gets exactly what was published.
+ */
+function houseStyle(text: string): string {
+  return text
+    .replace(/\u2014/g, "-")
+    .replace(/On-chain/g, "Onchain")
+    .replace(/on-chain/g, "onchain");
+}
+
+export function toRenderableIssue(
+  issue: OnchainIssue,
+  /**
+   * The transaction that published this article, recovered from the
+   * `ArticlePublished` log. Optional: the article is on chain either way - a
+   * missing record only means the link could not be resolved this request.
+   */
+  publish?: PublishRecord,
+): Issue | null {
   const metadata = issue.metadata;
   if (!metadata) return null;
 
@@ -60,8 +89,8 @@ export function toRenderableIssue(issue: OnchainIssue): Issue | null {
   return {
     id: issue.articleId,
     slug: `${issue.articleId}`,
-    title: issue.title,
-    standfirst: metadata.description,
+    title: houseStyle(issue.title),
+    standfirst: houseStyle(metadata.description),
     track: resolveTrack(issue),
     // Every article read from the treasury is, by definition, published.
     status: "published",
@@ -72,11 +101,11 @@ export function toRenderableIssue(issue: OnchainIssue): Issue | null {
     // without storing anything extra.
     coverSeed: issue.contentURI.replace(/^ipfs:\/\//, ""),
     coverPrompt: "",
-    body: metadata.content,
-    executiveSummary: metadata.executiveSummary ?? [],
+    body: houseStyle(metadata.content),
+    executiveSummary: (metadata.executiveSummary ?? []).map(houseStyle),
     score: {
       index: typeof engagement === "number" ? engagement : 0,
-      subjectLine: issue.title,
+      subjectLine: houseStyle(issue.title),
       // The agent's rejected candidates are not pinned, so there are none to
       // show. An empty list renders as absent rather than as a fake shortlist.
       rejected: [],
@@ -117,13 +146,18 @@ export function toRenderableIssue(issue: OnchainIssue): Issue | null {
       costUsd: 0,
       stages: ["ingest", "synthesize", "score", "pin", "publish"],
     },
+    mintTxHash: publish?.txHash,
+    mintBlock: publish?.blockNumber,
   };
 }
 
 /** Renderable issues only, newest first. */
-export function toRenderableIssues(issues: OnchainIssue[]): Issue[] {
+export function toRenderableIssues(
+  issues: OnchainIssue[],
+  publishIndex?: PublishIndex,
+): Issue[] {
   return issues
-    .map(toRenderableIssue)
+    .map((issue) => toRenderableIssue(issue, publishIndex?.get(issue.articleId)))
     .filter((issue): issue is Issue => issue !== null)
     .sort((a, b) => b.id - a.id);
 }

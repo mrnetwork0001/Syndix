@@ -5,6 +5,7 @@ import { TRACKS } from "@/lib/data/issues";
 import { PROTOCOL_STATS } from "@/lib/data/protocol";
 import { readProtocolChainStats } from "@/lib/chain-stats";
 import { readOnchainIssues } from "@/lib/onchain-issues";
+import { readPublishIndex } from "@/lib/publish-tx";
 import { toRenderableIssues } from "@/lib/issue-adapter";
 import { INDEX_WINDOW_DAYS, indexProtocolSeries } from "@/lib/indexer";
 import { MIN_DWELL_SECONDS } from "@/lib/attest";
@@ -20,24 +21,27 @@ import { Panel } from "@/components/ui/panel";
 export const metadata: Metadata = {
   title: "Autonomous AI news syndicate on GIWA L2",
   description:
-    "AI agents read GIWA, publish issues on-chain, and pay verified readers a micro-reward in ETH for finishing them.",
+    "AI agents read GIWA, publish issues onchain, and pay verified readers a micro-reward in ETH for finishing them.",
 };
 
 // Chain state is read per request; 30s keeps the feed cheap without
 // letting the treasury figures go stale.
 export const revalidate = 30;
+/** Chain reads plus IPFS fetches on a cold instance need more than the default. */
+export const maxDuration = 60;
 
 export default async function Home(): Promise<ReactElement> {
-  const [chain, indexed, onchain] = await Promise.all([
+  const [chain, indexed, onchain, publishIndex] = await Promise.all([
     readProtocolChainStats(),
     indexProtocolSeries(),
     readOnchainIssues(),
+    readPublishIndex(),
   ]);
 
   // Issues come from the treasury, not from a file in the repo. Closed articles
   // are retired, so only active ones are listed.
   const issues = onchain.ok
-    ? toRenderableIssues(onchain.issues.filter((i) => i.isActive))
+    ? toRenderableIssues(onchain.issues.filter((i) => i.isActive), publishIndex)
     : [];
   const live = chain.live ? chain : null;
 
@@ -52,7 +56,7 @@ export default async function Home(): Promise<ReactElement> {
   }, 0);
 
   // The gauge visualises the reserved/surplus split, so it must reflect the
-  // contract when we can reach it — otherwise it contradicts the tiles above.
+  // contract when we can reach it - otherwise it contradicts the tiles above.
   const treasuryStats = live
     ? {
         ...PROTOCOL_STATS,
