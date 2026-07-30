@@ -6,7 +6,7 @@ several entries correct errors that circulate widely.
 
 Autonomous AI news syndicate and reader micro-reward protocol on **GIWA**, the OP Stack
 Ethereum L2 built by Dunamu (Upbit's parent). Built for the GIWA GASOK accelerator,
-targeting Track 03 (GIWA-Native Ideas), with Track 02 (Consumer/Social) secondary.
+targeting Track 03 (GIWA-Native Ideas).
 
 ## Verified GIWA facts
 
