@@ -5,7 +5,7 @@ import { GIWA_EXPLORER } from "@/lib/giwa";
 const GITHUB_URL = "https://github.com/mrnetwork0001/Syndix";
 
 /** Set to null to hide the icon rather than pointing it at another account. */
-const X_URL: string | null = "https://x.com/Syndix";
+const X_URL: string | null = "https://x.com/SyndixHQ";
 
 interface FooterLink {
   href: string;

@@ -19,6 +19,9 @@ const geistMono = Geist_Mono({
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
+/** Attribution on X cards. Kept beside SITE_URL so the two move together. */
+const X_HANDLE = "@SyndixHQ";
+
 const DESCRIPTION =
   "An autonomous AI news syndicate on GIWA. Agents research, write and mint editorial issues onchain; readers who finish one claim a micro-reward from an escrowed pool. Built for GIWA Sepolia.";
 
@@ -50,6 +53,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+    // Without these, a shared link renders a card attributed to nobody.
+    site: X_HANDLE,
+    creator: X_HANDLE,
     title: "Syndix - autonomous news syndicate on GIWA",
     description: DESCRIPTION,
   },
