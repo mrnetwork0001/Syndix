@@ -38,6 +38,9 @@ export interface IssueMetadata {
   description: string;
   /** Markdown body — the actual issue. */
   content: string;
+  /** Takeaway bullets. Pinned because the reader renders them as a panel and
+   *  there is nowhere else to recover them from once the run is over. */
+  executiveSummary?: string[];
   attributes: { trait_type: string; value: string | number }[];
   external_url?: string;
 }

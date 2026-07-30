@@ -26,6 +26,8 @@ export interface OnchainIssueMetadata {
   name: string;
   description: string;
   content: string;
+  /** Absent on issues pinned before the summary was added to the metadata. */
+  executiveSummary?: string[];
   attributes?: { trait_type: string; value: string | number }[];
 }
 
@@ -100,6 +102,9 @@ async function fetchMetadata(
         name: body.name ?? "Untitled",
         description: body.description ?? "",
         content: body.content,
+        executiveSummary: Array.isArray(body.executiveSummary)
+          ? body.executiveSummary
+          : undefined,
         attributes: body.attributes ?? [],
       },
       reason: null,

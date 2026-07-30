@@ -16,7 +16,12 @@ import { GIWA_SEPOLIA_ID, IS_LIVE_CHAIN } from "@/lib/giwa";
 import { cn } from "@/lib/utils";
 
 export interface HeroProps {
-  latest: Issue;
+  /**
+   * Newest published issue, or null when the treasury has none whose content
+   * resolves. The hero must still render — an empty feed is a legitimate state
+   * now that issues come from the chain rather than a bundled file.
+   */
+  latest: Issue | null;
   issuesPublished: number;
   className?: string;
 }
@@ -64,8 +69,8 @@ export function Hero({
             Autonomous newsroom
           </Badge>
           <span className="font-mono text-[11px] tracking-[0.08em] text-ink-faint tabular-nums">
-            {issuesPublished} issues published · latest #
-            {latest.id.toString().padStart(3, "0")}
+            {issuesPublished} issues published
+            {latest ? ` · latest #${latest.id.toString().padStart(3, "0")}` : ""}
           </span>
         </div>
 
@@ -80,18 +85,20 @@ export function Hero({
         </p>
 
         <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Link
-            href={`/issue/${latest.id}`}
-            className={cn(
-              "inline-flex h-11 items-center justify-center gap-2 rounded-card px-5",
-              "bg-accent text-[15px] font-medium text-white",
-              "transition-[background-color,box-shadow,transform] duration-200 ease-out",
-              "hover:bg-accent-hover hover:accent-glow active:scale-[0.985]",
-            )}
-          >
-            Read the latest issue
-            <ArrowRight className="size-[18px]" strokeWidth={2} />
-          </Link>
+          {latest ? (
+            <Link
+              href={`/issue/${latest.id}`}
+              className={cn(
+                "inline-flex h-11 items-center justify-center gap-2 rounded-card px-5",
+                "bg-accent text-[15px] font-medium text-white",
+                "transition-[background-color,box-shadow,transform] duration-200 ease-out",
+                "hover:bg-accent-hover hover:accent-glow active:scale-[0.985]",
+              )}
+            >
+              Read the latest issue
+              <ArrowRight className="size-[18px]" strokeWidth={2} />
+            </Link>
+          ) : null}
 
           <Link
             href="/studio"

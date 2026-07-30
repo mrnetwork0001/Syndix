@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
 import { TriangleAlert } from "lucide-react";
-import { ISSUES, TRACKS } from "@/lib/data/issues";
+import { TRACKS } from "@/lib/data/issues";
 import { PROTOCOL_STATS } from "@/lib/data/protocol";
 import { readProtocolChainStats } from "@/lib/chain-stats";
+import { readOnchainIssues } from "@/lib/onchain-issues";
+import { toRenderableIssues } from "@/lib/issue-adapter";
 import { INDEX_WINDOW_DAYS, indexProtocolSeries } from "@/lib/indexer";
 import { Hero } from "@/components/feed/hero";
 import { StatRow } from "@/components/feed/stat-row";
@@ -11,6 +13,7 @@ import { FeedGrid } from "@/components/feed/feed-grid";
 import { ProtocolChart } from "@/components/analytics/protocol-chart";
 import { TreasuryGauge } from "@/components/analytics/treasury-gauge";
 import { Badge } from "@/components/ui/badge";
+import { Panel } from "@/components/ui/panel";
 
 export const metadata: Metadata = {
   title: "Autonomous AI news syndicate on GIWA L2",
@@ -23,10 +26,17 @@ export const metadata: Metadata = {
 export const revalidate = 30;
 
 export default async function Home(): Promise<ReactElement> {
-  const [chain, indexed] = await Promise.all([
+  const [chain, indexed, onchain] = await Promise.all([
     readProtocolChainStats(),
     indexProtocolSeries(),
+    readOnchainIssues(),
   ]);
+
+  // Issues come from the treasury, not from a file in the repo. Closed articles
+  // are retired, so only active ones are listed.
+  const issues = onchain.ok
+    ? toRenderableIssues(onchain.issues.filter((i) => i.isActive))
+    : [];
   const live = chain.live ? chain : null;
 
   // The gauge visualises the reserved/surplus split, so it must reflect the
@@ -42,7 +52,7 @@ export default async function Home(): Promise<ReactElement> {
         issuesPublished: live.articleCount,
       }
     : PROTOCOL_STATS;
-  const latest = ISSUES[0];
+  const latest = issues[0] ?? null;
 
   return (
     <div className="pt-6 sm:pt-8">
@@ -50,7 +60,20 @@ export default async function Home(): Promise<ReactElement> {
 
       <StatRow stats={PROTOCOL_STATS} live={live} className="mt-12 sm:mt-14" />
 
-      <FeedGrid issues={ISSUES} tracks={TRACKS} className="mt-16" />
+      {issues.length > 0 ? (
+        <FeedGrid issues={issues} tracks={TRACKS} className="mt-16" />
+      ) : (
+        <Panel className="mt-16 p-8 text-center">
+          <p className="text-[15px] font-medium text-ink">
+            No published issues available right now
+          </p>
+          <p className="mx-auto mt-2 max-w-md text-[13.5px] leading-relaxed text-ink-muted">
+            {onchain.ok
+              ? "The treasury has no active articles whose content resolves. Generate and publish one from the Agent Studio."
+              : `The issue index could not be read from GIWA Sepolia: ${onchain.reason}`}
+          </p>
+        </Panel>
+      )}
 
       <section className="mt-16" aria-labelledby="analytics-heading">
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-hairline pb-4">

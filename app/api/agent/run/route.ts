@@ -301,6 +301,7 @@ export async function POST(request: NextRequest) {
               name: generated.title,
               description: generated.standfirst,
               content: generated.body,
+              executiveSummary: generated.executiveSummary,
               external_url: "https://docs.giwa.io",
               attributes: [
                 { trait_type: "Track", value: track },
