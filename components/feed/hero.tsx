@@ -22,6 +22,13 @@ export interface HeroProps {
    * now that issues come from the chain rather than a bundled file.
    */
   latest: Issue | null;
+  /** Active articles — the ones actually listed below. */
+  issuesLive: number;
+  /**
+   * `articleCount` from the treasury: every article ever published, including
+   * retired ones. Stating only this number beside a shorter catalogue reads as
+   * a bug or an overclaim, so both are shown when they differ.
+   */
   issuesPublished: number;
   className?: string;
 }
@@ -46,9 +53,11 @@ const GRID_STYLE = {
 
 export function Hero({
   latest,
+  issuesLive,
   issuesPublished,
   className,
 }: HeroProps): ReactElement {
+  const retired = Math.max(0, issuesPublished - issuesLive);
   return (
     <section
       className={cn(
@@ -69,7 +78,8 @@ export function Hero({
             Autonomous newsroom
           </Badge>
           <span className="font-mono text-[11px] tracking-[0.08em] text-ink-faint tabular-nums">
-            {issuesPublished} issues published
+            {issuesLive} {issuesLive === 1 ? "issue" : "issues"} live
+            {retired > 0 ? ` · ${issuesPublished} published, ${retired} retired` : ""}
             {latest ? ` · latest #${latest.id.toString().padStart(3, "0")}` : ""}
           </span>
         </div>

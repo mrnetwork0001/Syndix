@@ -7,7 +7,9 @@ import { readProtocolChainStats } from "@/lib/chain-stats";
 import { readOnchainIssues } from "@/lib/onchain-issues";
 import { toRenderableIssues } from "@/lib/issue-adapter";
 import { INDEX_WINDOW_DAYS, indexProtocolSeries } from "@/lib/indexer";
+import { MIN_DWELL_SECONDS } from "@/lib/attest";
 import { Hero } from "@/components/feed/hero";
+import { HowItWorks } from "@/components/feed/how-it-works";
 import { StatRow } from "@/components/feed/stat-row";
 import { FeedGrid } from "@/components/feed/feed-grid";
 import { ProtocolChart } from "@/components/analytics/protocol-chart";
@@ -39,6 +41,16 @@ export default async function Home(): Promise<ReactElement> {
     : [];
   const live = chain.live ? chain : null;
 
+  // Every reward still funded across active articles. Stated on the page so a
+  // visitor can see the offer is real before spending twenty seconds on it.
+  const active = onchain.ok ? onchain.issues.filter((i) => i.isActive) : [];
+  const claimsRemaining = active.reduce((total, issue) => {
+    const perReader = BigInt(issue.rewardPerReaderWei);
+    if (perReader === 0n) return total;
+    const unspent = BigInt(issue.rewardPoolWei) - BigInt(issue.totalClaimedWei);
+    return total + Number(unspent / perReader);
+  }, 0);
+
   // The gauge visualises the reserved/surplus split, so it must reflect the
   // contract when we can reach it — otherwise it contradicts the tiles above.
   const treasuryStats = live
@@ -56,9 +68,20 @@ export default async function Home(): Promise<ReactElement> {
 
   return (
     <div className="pt-6 sm:pt-8">
-      <Hero latest={latest} issuesPublished={live ? live.articleCount : PROTOCOL_STATS.issuesPublished} />
+      <Hero
+        latest={latest}
+        issuesLive={issues.length}
+        issuesPublished={live ? live.articleCount : PROTOCOL_STATS.issuesPublished}
+      />
 
       <StatRow stats={PROTOCOL_STATS} live={live} className="mt-12 sm:mt-14" />
+
+      <HowItWorks
+        rewardPerReaderWei={active[0]?.rewardPerReaderWei}
+        minDwellSeconds={MIN_DWELL_SECONDS}
+        claimsRemaining={claimsRemaining}
+        className="mt-16"
+      />
 
       {issues.length > 0 ? (
         <FeedGrid issues={issues} tracks={TRACKS} className="mt-16" />
