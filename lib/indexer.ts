@@ -35,6 +35,14 @@ export const INDEX_WINDOW_DAYS = 14;
 /** Chunk size for getLogs. The public RPC rejects very wide ranges. */
 const LOG_CHUNK = 45_000n;
 
+/**
+ * Block SyndixTreasury was deployed at. Scanning below this is pure waste —
+ * there are no events to find — and without the floor a 14-day window on a
+ * 1-second chain is ~1.2M blocks, which took the homepage over a minute to
+ * render on a cold cache.
+ */
+const TREASURY_DEPLOY_BLOCK = 31_963_000n;
+
 export interface IndexedSeries {
   ok: true;
   points: DailyPoint[];
@@ -86,50 +94,59 @@ async function computeProtocolSeries(): Promise<IndexResult> {
 
     const head = await client.getBlockNumber();
     const span = BLOCKS_PER_DAY * BigInt(INDEX_WINDOW_DAYS);
-    const fromBlock = head > span ? head - span : 0n;
+    const windowStart = head > span ? head - span : 0n;
+    const fromBlock =
+      windowStart > TREASURY_DEPLOY_BLOCK ? windowStart : TREASURY_DEPLOY_BLOCK;
 
-    const claims: { blockNumber: bigint; amount: bigint; reader: string }[] = [];
-    const publishes: { blockNumber: bigint }[] = [];
-
+    const ranges: { start: bigint; end: bigint }[] = [];
     for (let start = fromBlock; start <= head; start += LOG_CHUNK) {
       const end = start + LOG_CHUNK - 1n > head ? head : start + LOG_CHUNK - 1n;
-
-      const [claimLogs, publishLogs] = await Promise.all([
-        client.getLogs({
-          address: SYNDIX_CONTRACTS.treasury,
-          event: REWARD_CLAIMED,
-          fromBlock: start,
-          toBlock: end,
-        }),
-        client.getLogs({
-          address: SYNDIX_CONTRACTS.treasury,
-          event: ARTICLE_PUBLISHED,
-          fromBlock: start,
-          toBlock: end,
-        }),
-      ]);
-
-      for (const log of claimLogs) {
-        claims.push({
-          blockNumber: log.blockNumber,
-          amount: log.args.amount ?? 0n,
-          reader: log.args.reader ?? "0x",
-        });
-      }
-      for (const log of publishLogs) {
-        publishes.push({ blockNumber: log.blockNumber });
-      }
+      ranges.push({ start, end });
     }
+
+    // Chunks are independent, so fan them out rather than walking them.
+    const perRange = await Promise.all(
+      ranges.map(async ({ start, end }) => {
+        const [claimLogs, publishLogs] = await Promise.all([
+          client.getLogs({
+            address: SYNDIX_CONTRACTS.treasury,
+            event: REWARD_CLAIMED,
+            fromBlock: start,
+            toBlock: end,
+          }),
+          client.getLogs({
+            address: SYNDIX_CONTRACTS.treasury,
+            event: ARTICLE_PUBLISHED,
+            fromBlock: start,
+            toBlock: end,
+          }),
+        ]);
+        return { claimLogs, publishLogs };
+      }),
+    );
+
+    const claims = perRange.flatMap((r) =>
+      r.claimLogs.map((log) => ({
+        blockNumber: log.blockNumber,
+        amount: log.args.amount ?? 0n,
+        reader: log.args.reader ?? "0x",
+      })),
+    );
+    const publishes = perRange.flatMap((r) =>
+      r.publishLogs.map((log) => ({ blockNumber: log.blockNumber })),
+    );
 
     // Only fetch timestamps for blocks that actually produced an event.
     const blocks = [
       ...new Set([...claims, ...publishes].map((e) => e.blockNumber)),
     ];
-    const timestamps = new Map<bigint, number>();
-    for (const blockNumber of blocks) {
-      const block = await client.getBlock({ blockNumber });
-      timestamps.set(blockNumber, Number(block.timestamp));
-    }
+    const fetched = await Promise.all(
+      blocks.map(async (blockNumber) => {
+        const block = await client.getBlock({ blockNumber });
+        return [blockNumber, Number(block.timestamp)] as const;
+      }),
+    );
+    const timestamps = new Map<bigint, number>(fetched);
 
     // Seed every day in the window so the chart has no gaps.
     const buckets = new Map<string, DailyPoint>();
