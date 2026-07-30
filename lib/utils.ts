@@ -18,11 +18,21 @@ export function weiToEth(wei: string | bigint): number {
   return Number(formatEther(typeof wei === "string" ? BigInt(wei) : wei));
 }
 
+/**
+ * Micro-amounts are the product here, not a rounding nuisance.
+ *
+ * A reader reward is 0.00003 ETH and gas is ~0.00000018 ETH. Flooring those to
+ * "<0.0001 ETH" — as this did — hides the exact number the contract pays and
+ * reads as a bug. Anything smaller than `dp` allows therefore gets the extra
+ * precision it needs rather than a floor; larger amounts keep the requested
+ * decimals, so the treasury tiles are unchanged.
+ */
 export function formatEth(wei: string | bigint, dp = 4): string {
   const eth = weiToEth(wei);
   if (eth === 0) return "0 ETH";
-  if (eth < 0.0001) return "<0.0001 ETH";
-  return `${eth.toFixed(dp).replace(/\.?0+$/, "")} ETH`;
+  const places =
+    eth < 10 ** -dp ? Math.min(18, Math.ceil(-Math.log10(eth)) + 2) : dp;
+  return `${eth.toFixed(places).replace(/\.?0+$/, "")} ETH`;
 }
 
 export function weiToUsd(wei: string | bigint): number {

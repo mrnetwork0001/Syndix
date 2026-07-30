@@ -123,6 +123,37 @@ export const UP_ID_SUFFIX = ".up.id";
 
 export const UP_ID_PATTERN = /^[a-z0-9][a-z0-9-]{2,30}\.up\.id$/;
 
+/**
+ * The live Upbit Web3 Names registry on GIWA Sepolia — one namespace for the
+ * whole ecosystem, not a per-app one.
+ *
+ * ERC-1967 proxy over `UpnameRegistry`; ERC-721 "Upbit Web3 Names" (UPNAME).
+ * `balanceOf(addr) > 0` means the address holds a verified identity, which is
+ * the sybil property Syndix's reward pool depends on.
+ *
+ * It is deliberately NOT ERC-721Enumerable (`tokenOfOwnerByIndex` reverts,
+ * `supportsInterface(0x780e9d63)` is false), so there is no on-chain path from
+ * an address to the name it holds. The label lives behind `tokenURI`, served
+ * from `UP_ID_METADATA_BASE`.
+ */
+export const UPNAME_REGISTRY =
+  "0x091D00004f21eb2Fc30964A8a4995692d9b49628" as const;
+
+/** `UpIdReaderRegistry` — the IReaderRegistry adapter over UPNAME_REGISTRY. */
+export const UP_ID_READER_REGISTRY =
+  "0xa316Bb7762c5689ec905b2dec2899Ded93557941" as const;
+
+/** Where `tokenURI` resolves. Returns `{ name: "alice.up.id", … }`. */
+export const UP_ID_METADATA_BASE = "https://sepolia-id.giwa.io/metadata";
+
+/** Names are minted here — via Dojang attestation, not by our contracts. */
+export const UP_ID_PLAYGROUND = "https://sepolia-playground.giwa.io";
+
+/** True when the treasury is gating on the real ecosystem registry. */
+export function isRealUpIdRegistry(address?: string): boolean {
+  return address?.toLowerCase() === UP_ID_READER_REGISTRY.toLowerCase();
+}
+
 export function isValidUpId(name: string): boolean {
   return UP_ID_PATTERN.test(name.trim().toLowerCase());
 }
