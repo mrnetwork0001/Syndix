@@ -12,7 +12,8 @@ import { IssueHeader } from "@/components/reader/issue-header";
 import { MarkdownBody } from "@/components/reader/markdown-body";
 import { ScorePanel } from "@/components/reader/score-panel";
 import { SignalList } from "@/components/reader/signal-list";
-import { ISSUES, getIssue } from "@/lib/data/issues";
+import { readOnchainIssues } from "@/lib/onchain-issues";
+import { toRenderableIssue } from "@/lib/issue-adapter";
 import { explorerBlock, explorerTx } from "@/lib/giwa";
 import type { Issue } from "@/lib/types";
 import { formatEth, formatInt, formatKrw, formatUsd, shortHash } from "@/lib/utils";
@@ -21,13 +22,33 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export async function generateStaticParams(): Promise<{ id: string }[]> {
-  return ISSUES.map((issue) => ({ id: String(issue.id) }));
+// The article index lives on chain and changes when the agent publishes, so
+// these pages cannot be prerendered at build time. 60s matches the loader cache.
+export const revalidate = 60;
+
+/**
+ * Resolves an issue from the treasury by article id.
+ *
+ * Returns null both when the article does not exist and when it exists but its
+ * pinned body never resolved — the reader has nothing to show in either case,
+ * and rendering a titled page with no content would be worse than a 404.
+ */
+async function loadIssue(id: string): Promise<Issue | null> {
+  const articleId = Number(id);
+  if (!Number.isInteger(articleId) || articleId <= 0) return null;
+
+  const onchain = await readOnchainIssues();
+  if (!onchain.ok) return null;
+
+  const article = onchain.issues.find((i) => i.articleId === articleId);
+  if (!article || !article.isActive) return null;
+
+  return toRenderableIssue(article);
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const issue = getIssue(id);
+  const issue = await loadIssue(id);
 
   if (!issue) {
     return {
@@ -212,7 +233,7 @@ function SponsorDisclosure({ issue }: { issue: Issue }): ReactElement | null {
 
 export default async function IssuePage({ params }: PageProps): Promise<ReactElement> {
   const { id } = await params;
-  const issue = getIssue(id);
+  const issue = await loadIssue(id);
 
   if (!issue) notFound();
 
