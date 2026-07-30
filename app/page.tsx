@@ -17,6 +17,7 @@ import { ProtocolChart } from "@/components/analytics/protocol-chart";
 import { TreasuryGauge } from "@/components/analytics/treasury-gauge";
 import { Badge } from "@/components/ui/badge";
 import { Panel } from "@/components/ui/panel";
+import { Reveal } from "@/components/ui/reveal";
 
 export const metadata: Metadata = {
   title: "Autonomous AI news syndicate on GIWA L2",
@@ -76,16 +77,20 @@ export default async function Home(): Promise<ReactElement> {
         latest={latest}
         issuesLive={issues.length}
         issuesPublished={live ? live.articleCount : PROTOCOL_STATS.issuesPublished}
+        blockNumber={live?.blockNumber.toString()}
       />
 
-      <StatRow stats={PROTOCOL_STATS} live={live} className="mt-12 sm:mt-14" />
+      <Reveal className="mt-12 sm:mt-14">
+        <StatRow stats={PROTOCOL_STATS} live={live} />
+      </Reveal>
 
-      <HowItWorks
-        rewardPerReaderWei={active[0]?.rewardPerReaderWei}
-        minDwellSeconds={MIN_DWELL_SECONDS}
-        claimsRemaining={claimsRemaining}
-        className="mt-16"
-      />
+      <Reveal className="mt-16">
+        <HowItWorks
+          rewardPerReaderWei={active[0]?.rewardPerReaderWei}
+          minDwellSeconds={MIN_DWELL_SECONDS}
+          claimsRemaining={claimsRemaining}
+        />
+      </Reveal>
 
       {issues.length > 0 ? (
         <FeedGrid issues={issues} tracks={TRACKS} className="mt-16" />
@@ -102,7 +107,8 @@ export default async function Home(): Promise<ReactElement> {
         </Panel>
       )}
 
-      <section className="mt-16" aria-labelledby="analytics-heading">
+      <Reveal as="section" className="mt-16">
+        <section aria-labelledby="analytics-heading">
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-hairline pb-4">
           <div>
             <h2
@@ -132,7 +138,8 @@ export default async function Home(): Promise<ReactElement> {
           <ProtocolChart series={indexed.ok ? indexed.points : PROTOCOL_STATS.series} />
           <TreasuryGauge stats={treasuryStats} />
         </div>
-      </section>
+        </section>
+      </Reveal>
     </div>
   );
 }

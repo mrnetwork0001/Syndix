@@ -1,5 +1,7 @@
 import type { ReactElement } from "react";
 import { ArrowDownRight, ArrowUpRight, Minus, type LucideIcon } from "lucide-react";
+import { CountUp } from "@/components/ui/count-up";
+import { SpotlightSurface } from "@/components/ui/spotlight-surface";
 import { cn } from "@/lib/utils";
 
 export interface StatTileProps {
@@ -28,7 +30,12 @@ export function StatTile({
     dir === "up" ? ArrowUpRight : dir === "down" ? ArrowDownRight : Minus;
 
   return (
-    <div className={cn("panel px-4 py-3.5", className)}>
+    <SpotlightSurface
+      className={cn(
+        "panel panel-interactive spotlight hover:panel-interactive-hover px-4 py-3.5",
+        className,
+      )}
+    >
       <div className="flex items-center justify-between gap-2">
         <span className="truncate text-[11px] tracking-[0.14em] text-ink-faint uppercase">
           {label}
@@ -48,7 +55,7 @@ export function StatTile({
             accent ? "text-accent" : "text-ink",
           )}
         >
-          {value}
+          <CountUp value={value} />
         </span>
         {hasTrend ? (
           <span
@@ -68,6 +75,6 @@ export function StatTile({
       {sublabel ? (
         <p className="mt-2 truncate text-xs text-ink-muted">{sublabel}</p>
       ) : null}
-    </div>
+    </SpotlightSurface>
   );
 }

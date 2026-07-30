@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactElement } from "react";
 import Link from "next/link";
 import {
@@ -22,6 +24,7 @@ import {
   formatUsd,
   relativeTime,
 } from "@/lib/utils";
+import { useSpotlight } from "@/lib/use-spotlight";
 
 export interface IssueCardProps {
   issue: Issue;
@@ -66,6 +69,11 @@ export function IssueCard({
   now,
   featured = false,
 }: IssueCardProps): ReactElement {
+  const {
+    ref: spotRef,
+    onPointerMove,
+    onPointerLeave,
+  } = useSpotlight<HTMLAnchorElement>();
   const track = trackMeta(issue.track);
   const status = STATUS[issue.status];
   const published = issue.status === "published";
@@ -81,8 +89,12 @@ export function IssueCard({
     <Link
       href={`/issue/${issue.id}`}
       aria-label={`Issue ${issue.id}: ${issue.title}`}
+      ref={spotRef}
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
       className={cn(
-        "panel group relative isolate flex w-full overflow-hidden",
+        "panel panel-interactive spotlight hover:panel-interactive-hover",
+        "group relative isolate flex w-full overflow-hidden",
         "transition-[border-color,box-shadow] duration-200 ease-out",
         "hover:border-hairline-strong",
         featured

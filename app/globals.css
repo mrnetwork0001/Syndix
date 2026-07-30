@@ -137,6 +137,39 @@ body {
     0 8px 24px -12px rgba(0, 0, 0, 0.6);
 }
 
+/* Panel that responds to the cursor. The base panel only changed border colour
+   on hover, which is why dense pages read as flat: nothing had depth. This
+   lifts a hairline and deepens the shadow, on the same 200ms the rest of the
+   system uses. */
+@utility panel-interactive {
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 200ms ease-out,
+    box-shadow 220ms ease-out;
+  will-change: transform;
+}
+
+@utility panel-interactive-hover {
+  transform: translateY(-2px);
+  border-color: var(--color-hairline-strong);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.07),
+    0 2px 4px 0 rgba(0, 0, 0, 0.45),
+    0 18px 44px -18px rgba(0, 0, 0, 0.75);
+}
+
+/* A surface that lights up under the cursor.
+   Pair with useSpotlight(), which publishes --spot-x / --spot-y on pointermove.
+   The highlight is painted in a pseudo-element so it costs no extra DOM and
+   cannot intercept clicks, and it sits under the content because the panel's
+   children paint after it. */
+@utility spotlight {
+  position: relative;
+}
+
+/* Kept out of @utility so the pseudo-element is not layered into Tailwind's
+   utility cascade, where the hover variant below could not reach it. */
+
 @utility accent-glow {
   box-shadow:
     0 0 0 1px rgba(0, 102, 255, 0.5),
@@ -503,5 +536,122 @@ body {
 
   .print-doc .keep-together {
     break-inside: avoid;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Ambient motion                                                     */
+/* ------------------------------------------------------------------ */
+
+/* The hero's blurred colour fields drift instead of sitting still. Long
+   durations and tiny distances on purpose: it should register as depth, not as
+   an animation anyone notices playing. Transform and opacity only, so it stays
+   on the compositor. */
+@keyframes syndix-drift-a {
+  0%, 100% { transform: translate3d(-50%, 0, 0) scale(1); opacity: 1; }
+  50% { transform: translate3d(-48%, 2.5rem, 0) scale(1.06); opacity: 0.86; }
+}
+
+@keyframes syndix-drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.9; }
+  50% { transform: translate3d(3rem, -2rem, 0) scale(1.1); opacity: 1; }
+}
+
+.animate-drift-a {
+  animation: syndix-drift-a 22s ease-in-out infinite;
+}
+
+.animate-drift-b {
+  animation: syndix-drift-b 28s ease-in-out infinite;
+}
+
+/* Sheen that crosses a surface once when it enters view. */
+@keyframes syndix-sheen {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(220%); }
+}
+
+.animate-sheen {
+  animation: syndix-sheen 1100ms cubic-bezier(0.22, 1, 0.36, 1) 1 both;
+}
+
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 280ms ease-out;
+  background: radial-gradient(
+    340px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+    color-mix(in srgb, var(--color-accent) 16%, transparent),
+    transparent 60%
+  );
+}
+
+.spotlight:hover::before {
+  opacity: 1;
+}
+
+/* A hairline that brightens where the cursor is, so the edge tracks the pointer
+   rather than lighting up all at once. */
+.spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 280ms ease-out;
+  padding: 1px;
+  background: radial-gradient(
+    260px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+    color-mix(in srgb, var(--color-accent) 55%, transparent),
+    transparent 62%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.spotlight:hover::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight::before,
+  .spotlight::after {
+    display: none;
+  }
+}
+
+/* The hero grid, revealed only around the pointer. Position comes from
+   --gx/--gy, published by HeroAmbient on pointermove. The mask does the work so
+   there is nothing to animate per frame beyond one gradient origin. */
+.hero-grid-spot {
+  opacity: 0.9;
+  -webkit-mask-image: radial-gradient(
+    260px circle at var(--gx) var(--gy),
+    #000 0%,
+    rgba(0, 0, 0, 0.35) 45%,
+    transparent 72%
+  );
+  mask-image: radial-gradient(
+    260px circle at var(--gx) var(--gy),
+    #000 0%,
+    rgba(0, 0, 0, 0.35) 45%,
+    transparent 72%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-grid-spot {
+    display: none;
   }
 }
