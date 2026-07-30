@@ -1,10 +1,10 @@
 import { defineChain } from "viem";
 
 /**
- * GIWA Sepolia — the OP Stack L2 operated by Dunamu / Upbit.
+ * GIWA Sepolia - the OP Stack L2 operated by Dunamu / Upbit.
  *
  * Verified against https://docs.giwa.io/get-started/connect-to-giwa
- *   Chain ID ........ 91342   (NOT 919 — that value is a common mis-quote)
+ *   Chain ID ........ 91342   (NOT 919 - that value is a common mis-quote)
  *   L1 .............. Ethereum Sepolia (11155111)
  *   Block time ...... ~1s, with <=200ms Flashblock preconfirmations
  *   Mainnet ......... still under development as of this build
@@ -47,10 +47,10 @@ export const giwaSepolia = defineChain({
  * Sourced from https://docs.giwa.io/network-information/contracts
  */
 export const GIWA_PREDEPLOYS = {
-  /** Standard ERC-4337 v0.7 EntryPoint — how Syndix sponsors gasless claims. */
+  /** Standard ERC-4337 v0.7 EntryPoint - how Syndix sponsors gasless claims. */
   entryPointV07: "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
   entryPointV06: "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
-  /** Ethereum Attestation Service — backs Dojang proof-of-read attestations. */
+  /** Ethereum Attestation Service - backs Dojang proof-of-read attestations. */
   eas: "0x4200000000000000000000000000000000000021",
   multicall3: "0xcA11bde05977b3631167028862bE2a173976CA11",
   permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
@@ -67,7 +67,7 @@ export const GIWA_L1_CONTRACTS = {
   systemConfig: "0x8352825bA56C32d816Dd906Ad4A392B5BC9eC984",
 } as const;
 
-/** Zero address sentinel — means "contract not deployed yet, run in demo mode". */
+/** Zero address sentinel - means "contract not deployed yet, run in demo mode". */
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
 
 function envAddress(value: string | undefined): `0x${string}` {
@@ -87,7 +87,7 @@ export const SYNDIX_CONTRACTS = {
 
 /**
  * Gasless claims additionally need a bundler that serves chain 91342 and a
- * smart-account factory. The paymaster being deployed is not sufficient — see
+ * smart-account factory. The paymaster being deployed is not sufficient - see
  * the note in components/reader/claim-modal.tsx.
  */
 export const BUNDLER_URL = process.env.NEXT_PUBLIC_BUNDLER_URL?.trim() || "";
@@ -111,7 +111,7 @@ export const explorerBlock = (block: number | bigint) =>
 /* ------------------------------------------------------------------ */
 
 /**
- * GIWA's identity primitive is `username.up.id` — ENS subdomains of the
+ * GIWA's identity primitive is `username.up.id` - ENS subdomains of the
  * `up.id` parent, issued as Soul-Bound Tokens to Dojang Verified Addresses,
  * capped at one per wallet.
  *
@@ -124,7 +124,7 @@ export const UP_ID_SUFFIX = ".up.id";
 export const UP_ID_PATTERN = /^[a-z0-9][a-z0-9-]{2,30}\.up\.id$/;
 
 /**
- * The live Upbit Web3 Names registry on GIWA Sepolia — one namespace for the
+ * The live Upbit Web3 Names registry on GIWA Sepolia - one namespace for the
  * whole ecosystem, not a per-app one.
  *
  * ERC-1967 proxy over `UpnameRegistry`; ERC-721 "Upbit Web3 Names" (UPNAME).
@@ -132,21 +132,21 @@ export const UP_ID_PATTERN = /^[a-z0-9][a-z0-9-]{2,30}\.up\.id$/;
  * the sybil property Syndix's reward pool depends on.
  *
  * It is deliberately NOT ERC-721Enumerable (`tokenOfOwnerByIndex` reverts,
- * `supportsInterface(0x780e9d63)` is false), so there is no on-chain path from
+ * `supportsInterface(0x780e9d63)` is false), so there is no onchain path from
  * an address to the name it holds. The label lives behind `tokenURI`, served
  * from `UP_ID_METADATA_BASE`.
  */
 export const UPNAME_REGISTRY =
   "0x091D00004f21eb2Fc30964A8a4995692d9b49628" as const;
 
-/** `UpIdReaderRegistry` — the IReaderRegistry adapter over UPNAME_REGISTRY. */
+/** `UpIdReaderRegistry` - the IReaderRegistry adapter over UPNAME_REGISTRY. */
 export const UP_ID_READER_REGISTRY =
   "0xa316Bb7762c5689ec905b2dec2899Ded93557941" as const;
 
 /** Where `tokenURI` resolves. Returns `{ name: "alice.up.id", … }`. */
 export const UP_ID_METADATA_BASE = "https://sepolia-id.giwa.io/metadata";
 
-/** Names are minted here — via Dojang attestation, not by our contracts. */
+/** Names are minted here - via Dojang attestation, not by our contracts. */
 export const UP_ID_PLAYGROUND = "https://sepolia-playground.giwa.io";
 
 /** True when the treasury is gating on the real ecosystem registry. */

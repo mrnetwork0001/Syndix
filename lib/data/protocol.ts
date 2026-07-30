@@ -13,7 +13,7 @@ import { ISSUES, TRACKS } from "@/lib/data/issues";
  *
  * Every wei total below is DERIVED from `ISSUES` rather than hard-coded, so the
  * treasury panel can never drift out of sync with the archive. None of it is
- * read from a live contract — Syndix is not deployed — and the UI is required
+ * read from a live contract - Syndix is not deployed - and the UI is required
  * to label it as simulated.
  */
 
@@ -47,7 +47,7 @@ const X402_REVENUE_WEI = X402_ALL_TIME_CALLS * X402_PRICE_WEI;
 
 /**
  * 14 days ending 2026-07-29. Claim spikes track publication days
- * (07-20, 07-24, 07-29) and dip across weekends — the shape you get from a
+ * (07-20, 07-24, 07-29) and dip across weekends - the shape you get from a
  * newsletter, not from a random walk.
  */
 const SERIES_INPUT: {
@@ -113,7 +113,7 @@ export const SPONSORS: Sponsor[] = [
     handle: "baekje.up.id",
     depositWei: "750000000000000000",
     blurb:
-      "Indexing and observability for GIWA Sepolia — block-level tracing, Flashblocks-aware receipts, and derivation lag monitoring.",
+      "Indexing and observability for GIWA Sepolia - block-level tracing, Flashblocks-aware receipts, and derivation lag monitoring.",
   },
   {
     name: "Sundial Security",
@@ -139,7 +139,7 @@ export const AGENT_RUN_SCRIPT: AgentLogLine[] = [
     at: 120,
     stage: "scanning",
     level: "info",
-    message: "Run initialised — target track: GIWA L2 Ecosystem",
+    message: "Run initialised - target track: GIWA L2 Ecosystem",
     meta: "chainId=91342",
   },
   {
@@ -171,7 +171,7 @@ export const AGENT_RUN_SCRIPT: AgentLogLine[] = [
     at: 5310,
     stage: "scanning",
     level: "warn",
-    message: "eth_getLogs range rejected — response size cap hit",
+    message: "eth_getLogs range rejected - response size cap hit",
     meta: "retrying in 4 chunks of 1,080 blocks",
   },
   {
@@ -179,7 +179,7 @@ export const AGENT_RUN_SCRIPT: AgentLogLine[] = [
     at: 8940,
     stage: "scanning",
     level: "ok",
-    message: "Chunked sweep complete — 1,207 logs retrieved",
+    message: "Chunked sweep complete - 1,207 logs retrieved",
     meta: "4/4 chunks · 0 gaps",
   },
   {
@@ -219,7 +219,7 @@ export const AGENT_RUN_SCRIPT: AgentLogLine[] = [
     at: 15910,
     stage: "scanning",
     level: "ok",
-    message: "34 duplicates dropped — 4 signals survive",
+    message: "34 duplicates dropped - 4 signals survive",
     meta: "top confidence 93",
   },
   {
@@ -243,7 +243,7 @@ export const AGENT_RUN_SCRIPT: AgentLogLine[] = [
     at: 29940,
     stage: "synthesizing",
     level: "ok",
-    message: "Draft complete — 1,024 words, 5 min read",
+    message: "Draft complete - 1,024 words, 5 min read",
     meta: "6,480 out · $1.5876",
   },
   {
@@ -316,7 +316,7 @@ export const AGENT_RUN_SCRIPT: AgentLogLine[] = [
     at: 44280,
     stage: "minting",
     level: "ok",
-    message: "Sealed in block 28944712 — reward pool funded for 1,200 claims",
+    message: "Sealed in block 28944712 - reward pool funded for 1,200 claims",
     meta: "0.036 ETH escrowed",
   },
   {
@@ -324,7 +324,7 @@ export const AGENT_RUN_SCRIPT: AgentLogLine[] = [
     at: 45010,
     stage: "complete",
     level: "ok",
-    message: "Run complete — issue #6 published",
+    message: "Run complete - issue #6 published",
     meta: "45.0s · $1.8163 total",
   },
 ];

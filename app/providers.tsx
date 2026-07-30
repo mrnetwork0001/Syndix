@@ -14,7 +14,7 @@ export function Providers({
   rates: RatesSnapshot;
 }) {
   // Both are created lazily inside useState so they survive Fast Refresh and
-  // are never re-instantiated on re-render — a new QueryClient per render would
+  // are never re-instantiated on re-render - a new QueryClient per render would
   // silently discard every cached balance and stats query.
   const [config] = useState(() => createWagmiConfig());
   const [queryClient] = useState(

@@ -11,7 +11,7 @@ import { compact, formatEth, formatInt, formatKrw, formatUsd } from "@/lib/utils
 export interface StatRowProps {
   stats: ProtocolStats;
   /**
-   * Live treasury state. When present these numbers win outright — showing a
+   * Live treasury state. When present these numbers win outright - showing a
    * "Live · GIWA Sepolia" badge above the editorial dataset was the app
    * contradicting its own /protocol page.
    */
@@ -65,7 +65,7 @@ export function StatRow({ stats, live, className }: StatRowProps): ReactElement 
             <StatTile
               label="Rewards to readers"
               value={formatUsd(live.totalRewardDistributedWei)}
-              sublabel={`${formatKrw(live.totalRewardDistributedWei)} settled on-chain`}
+              sublabel={`${formatKrw(live.totalRewardDistributedWei)} settled onchain`}
               icon={Coins}
             />
             <StatTile

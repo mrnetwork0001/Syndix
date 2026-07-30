@@ -2,7 +2,7 @@ import type { Address, Hex } from "viem";
 import { GIWA_SEPOLIA_ID, SYNDIX_CONTRACTS } from "./giwa";
 
 /**
- * EIP-712 ReadProof — the attestation SyndixTreasury.claimReaderReward verifies.
+ * EIP-712 ReadProof - the attestation SyndixTreasury.claimReaderReward verifies.
  *
  * This must match the contract byte for byte. The typehash there is:
  *   keccak256("ReadProof(uint256 articleId,address reader,uint32 dwellSeconds,uint256 deadline)")

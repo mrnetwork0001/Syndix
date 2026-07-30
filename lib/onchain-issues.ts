@@ -12,13 +12,13 @@ import { ipfsGatewayUrl } from "./ipfs";
  * Reads the published issue set from the chain, with bodies fetched from IPFS.
  *
  * This is what makes the pitch literal rather than aspirational: the treasury is
- * the index and IPFS is the store, so the feed is a projection of on-chain
+ * the index and IPFS is the store, so the feed is a projection of onchain
  * state instead of a file in the repo that happens to describe it.
  *
  * A published article whose contentURI does not resolve is surfaced as
  * `unavailable` rather than dropped. Six of the original articles carry
  * fabricated CIDs, and hiding them would misrepresent what the treasury
- * actually holds — the honest presentation is to show the record and say the
+ * actually holds - the honest presentation is to show the record and say the
  * content is missing.
  */
 
@@ -85,11 +85,11 @@ async function fetchMetadata(
         metadata: null,
         reason:
           response.status === 429
-            ? "Gateway is rate limiting this request — content may still exist"
+            ? "Gateway is rate limiting this request - content may still exist"
             : response.status === 400 || response.status === 404
-              ? "Not pinned — no content behind this CID"
+              ? "Not pinned - no content behind this CID"
               : response.status >= 500
-                ? "Gateway could not resolve this CID — most likely never pinned"
+                ? "Gateway could not resolve this CID - most likely never pinned"
                 : `Gateway returned ${response.status}`,
       };
     }

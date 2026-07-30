@@ -4,7 +4,7 @@ import { formatEth } from "@/lib/utils";
 /**
  * The reward a reader is promised is 0.00003 ETH and gas is ~0.00000018 ETH.
  * An earlier `formatEth` floored anything under 0.0001 to "<0.0001 ETH", which
- * put a placeholder where the product's headline number should be — on the
+ * put a placeholder where the product's headline number should be - on the
  * feed, in the claim bar, and in the claim receipt. These pin the exact
  * strings so that never comes back.
  */

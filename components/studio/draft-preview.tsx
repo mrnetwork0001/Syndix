@@ -38,7 +38,7 @@ export function DraftPreview({
       <Panel>
         <PanelHeader
           title="Draft preview"
-          description="The generated issue lands here — cover, deck, summary and full markdown body."
+          description="The generated issue lands here - cover, deck, summary and full markdown body."
           icon={FileText}
         />
         <div className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
@@ -61,7 +61,7 @@ export function DraftPreview({
     <Panel className="animate-rise overflow-hidden">
       <PanelHeader
         title="Draft preview"
-        description="Not pinned to IPFS and not minted — this is the agent's output before the publish step."
+        description="Not pinned to IPFS and not minted - this is the agent's output before the publish step."
         icon={FileText}
         action={
           <Badge tone={track.tone}>{track.label}</Badge>

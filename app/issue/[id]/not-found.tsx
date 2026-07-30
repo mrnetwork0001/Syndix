@@ -19,7 +19,7 @@ export default function IssueNotFound(): ReactElement {
         </h1>
 
         <p className="mt-3 text-[13.5px] leading-relaxed text-ink-muted">
-          The syndicate publishes to a fixed, numbered ledger — this id was never minted,
+          The syndicate publishes to a fixed, numbered ledger - this id was never minted,
           or the slug has been rewritten. The full archive is one click away.
         </p>
 

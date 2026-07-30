@@ -5,7 +5,7 @@ import type { Issue, Sponsor, Track, TrackId } from "@/lib/types";
  *
  * Everything here is authored content plus SIMULATED protocol telemetry: the
  * tx hashes, block heights and CIDs are shaped correctly but no Syndix
- * contract is deployed yet, so nothing in this file is confirmed on-chain.
+ * contract is deployed yet, so nothing in this file is confirmed onchain.
  * The UI is required to label it as such. The GIWA network facts inside the
  * article bodies (chain id, endpoints, predeploy addresses, up.id / Dojang
  * semantics) are real and verified against docs.giwa.io.
@@ -54,9 +54,9 @@ const MARUNODE: Sponsor = {
 /*  Bodies                                                             */
 /* ------------------------------------------------------------------ */
 
-const BODY_6 = `GIWA seals a block about once a second. For a swap UI, that is already fine. It is not fine for the thing consumer crypto keeps losing at — making an on-chain action feel like a button press instead of a form submission.
+const BODY_6 = `GIWA seals a block about once a second. For a swap UI, that is already fine. It is not fine for the thing consumer crypto keeps losing at - making an onchain action feel like a button press instead of a form submission.
 
-Flashblocks are the network's answer, and the interesting part is how little they ask of you. Alongside the standard endpoint at \`https://sepolia-rpc.giwa.io\`, GIWA Sepolia runs \`https://sepolia-rpc-flashblocks.giwa.io\`, which streams preconfirmed sub-blocks and surfaces them under the ordinary \`pending\` block tag. The target is a preconfirmation in as little as **200 milliseconds** — roughly five sub-blocks inside every sealed one-second block.
+Flashblocks are the network's answer, and the interesting part is how little they ask of you. Alongside the standard endpoint at \`https://sepolia-rpc.giwa.io\`, GIWA Sepolia runs \`https://sepolia-rpc-flashblocks.giwa.io\`, which streams preconfirmed sub-blocks and surfaces them under the ordinary \`pending\` block tag. The target is a preconfirmation in as little as **200 milliseconds** - roughly five sub-blocks inside every sealed one-second block.
 
 ## There is no new API, and that is the point
 
@@ -96,7 +96,7 @@ Two clients, one rule: never let a \`fast\` read decide whether a user gets paid
 
 ## The latency budget, measured
 
-We probed both endpoints from a single Seoul region host over six hours on 2026-07-28. These are **our numbers, not a published SLA** — treat them as a shape, not a guarantee.
+We probed both endpoints from a single Seoul region host over six hours on 2026-07-28. These are **our numbers, not a published SLA** - treat them as a shape, not a guarantee.
 
 | Step | Sealed-block path | Flashblocks path |
 | --- | --- | --- |
@@ -111,17 +111,17 @@ The row that matters is the third one. Everything below it is unchanged, because
 
 ## What Flashblocks do not do
 
-1. **They do not make withdrawals fast.** The OP Stack withdrawal path — initiate on L2, prove against a dispute game on L1, finalise after the challenge window — is untouched.
+1. **They do not make withdrawals fast.** The OP Stack withdrawal path - initiate on L2, prove against a dispute game on L1, finalise after the challenge window - is untouched.
 2. **They do not make you safe from reordering.** A preconfirmation is a statement about what the sequencer intends to include. It is strong in practice and unenforceable in theory.
 3. **They do not change gas accounting.** The L1 data component you pay is still derived from the \`GasPriceOracle\` predeploy at \`0x420000000000000000000000000000000000000F\`.
 
-> A preconfirmation is a promise from the sequencer, not a proof from the chain. Build the UI so the optimistic state is visibly optimistic — and so the rollback path is a screen you have actually rendered at least once, in staging, on purpose.
+> A preconfirmation is a promise from the sequencer, not a proof from the chain. Build the UI so the optimistic state is visibly optimistic - and so the rollback path is a screen you have actually rendered at least once, in staging, on purpose.
 
 ## Three product shapes this unlocks
 
 **Micro-rewards.** Below roughly 300 ms, users stop treating a payout as a transaction and start treating it as feedback. This is the entire thesis behind Syndix's per-reader rewards: a claim that confirms in the time it takes to lift your thumb reads as a product, not a protocol.
 
-**Turn-based play.** Anything where the next move depends on the last one — auctions, card games, prediction ticks — was previously forced to run a trusted off-chain loop and reconcile later. A 200 ms preconf makes the naive on-chain loop viable for the first time.
+**Turn-based play.** Anything where the next move depends on the last one - auctions, card games, prediction ticks - was previously forced to run a trusted off-chain loop and reconcile later. A 200 ms preconf makes the naive onchain loop viable for the first time.
 
 **Machine buyers.** An agent paying per API call cannot wait a second per request; at 40 calls it has burned a minute of wall-clock on consensus. Preconfirmations are what make HTTP 402 metering feel like a header instead of a workflow.
 
@@ -138,11 +138,11 @@ Two states, two labels, no lying to the user. Median perceived confirmation in o
 
 ## The caveat we are keeping
 
-All of this is GIWA **Sepolia**, chain ID 91342, settling to Ethereum Sepolia. GIWA mainnet is still under development, and preconfirmation behaviour under real mainnet load — congestion, adversarial ordering, multi-region clients — is exactly the thing a testnet cannot tell you. Our measurements come from one geography and one traffic pattern.
+All of this is GIWA **Sepolia**, chain ID 91342, settling to Ethereum Sepolia. GIWA mainnet is still under development, and preconfirmation behaviour under real mainnet load - congestion, adversarial ordering, multi-region clients - is exactly the thing a testnet cannot tell you. Our measurements come from one geography and one traffic pattern.
 
-Build against it. Ship the two-client split now, because it costs you nothing and it is the correct architecture whether the preconf lands in 200 ms or 900 ms. But do not put "instant finality" in your landing page copy. Put "instant feedback, fast finality" — it is the honest sentence, and it is still the best one in the L2 category.`;
+Build against it. Ship the two-client split now, because it costs you nothing and it is the correct architecture whether the preconf lands in 200 ms or 900 ms. But do not put "instant finality" in your landing page copy. Put "instant feedback, fast finality" - it is the honest sentence, and it is still the best one in the L2 category.`;
 
-const BODY_5 = `The interesting thing about x402 is not that it revives an HTTP status code from 1997. It is that it makes a machine a *customer* — an entity that discovers a price, decides it is worth paying, pays, and gets the good, without a session, an API key, a signup form or a human in the loop.
+const BODY_5 = `The interesting thing about x402 is not that it revives an HTTP status code from 1997. It is that it makes a machine a *customer* - an entity that discovers a price, decides it is worth paying, pays, and gets the good, without a session, an API key, a signup form or a human in the loop.
 
 That loop has been technically possible for a decade. What was missing was a settlement layer where a $0.03 payment is not absurd, and an identity layer where the seller can tell one buyer from ten thousand copies of the same buyer. GIWA has an unusually clean answer to both.
 
@@ -178,7 +178,7 @@ The buyer signs a payment payload, retries with an \`X-PAYMENT\` header, and rec
 
 ### Two details worth arguing about
 
-- **\`maxAmountRequired\`, not \`amount\`.** The buyer authorises a ceiling; the seller settles for the actual cost. Metered work — an LLM call, a query returning 4 rows or 4,000 — stops needing a subscription.
+- **\`maxAmountRequired\`, not \`amount\`.** The buyer authorises a ceiling; the seller settles for the actual cost. Metered work - an LLM call, a query returning 4 rows or 4,000 - stops needing a subscription.
 - **\`maxTimeoutSeconds\`.** The quote expires. On a chain with second-level blocks that is a real constraint, and it is where the Flashblocks endpoint stops being a nicety.
 
 ## Why the L2 choice is not incidental
@@ -195,27 +195,27 @@ The GIWA row is the only one where the fee is a rounding error on the good being
 
 ## The part nobody solves: who is the buyer?
 
-Machine payments break the oldest assumption in commerce — that a customer is scarce. If your endpoint sells data for $0.03 and rewards readers $0.10, an agent with a for-loop is not a customer, it is an exploit.
+Machine payments break the oldest assumption in commerce - that a customer is scarce. If your endpoint sells data for $0.03 and rewards readers $0.10, an agent with a for-loop is not a customer, it is an exploit.
 
-GIWA ships the missing primitive at the network level. **Upbit Web3 Names** are \`username.up.id\` — ENS subdomains of the \`up.id\` parent, issued as **Soul-Bound Tokens** to addresses that hold a **Dojang** verification, and capped at **one per wallet**. Dojang is GIWA's attestation service, built on the EAS predeploy at \`0x4200000000000000000000000000000000000021\`, with Upbit Korea as the primary issuer.
+GIWA ships the missing primitive at the network level. **Upbit Web3 Names** are \`username.up.id\` - ENS subdomains of the \`up.id\` parent, issued as **Soul-Bound Tokens** to addresses that hold a **Dojang** verification, and capped at **one per wallet**. Dojang is GIWA's attestation service, built on the EAS predeploy at \`0x4200000000000000000000000000000000000021\`, with Upbit Korea as the primary issuer.
 
 So a seller can gate on three orthogonal facts:
 
-- **Is this a distinct human?** — an up.id SBT exists for the caller.
-- **Is this address attested?** — a Dojang Verified Address attestation resolves.
-- **Can it pay?** — the x402 payload settles.
+- **Is this a distinct human?** - an up.id SBT exists for the caller.
+- **Is this address attested?** - a Dojang Verified Address attestation resolves.
+- **Can it pay?** - the x402 payload settles.
 
 > Most agent-payment demos answer only the third question. The first two are what turn a demo into a market, because they are what stop the market from being drained by one script in one block.
 
 ## Agent-to-agent, concretely
 
-Syndix's own pipeline is both sides of this. The ingestion agent is a **buyer**: it pays for indexed on-chain queries and market feeds per call rather than holding five API subscriptions. The publishing side is a **seller**: \`/api/x402/feed\` returns 402 without an \`X-PAYMENT\` header and the full corpus with one.
+Syndix's own pipeline is both sides of this. The ingestion agent is a **buyer**: it pays for indexed onchain queries and market feeds per call rather than holding five API subscriptions. The publishing side is a **seller**: \`/api/x402/feed\` returns 402 without an \`X-PAYMENT\` header and the full corpus with one.
 
-The economics of the buyer side are what surprised us. Per issue, metered data purchases cost less than the illustration pass. Subscriptions had been charging us for a permanent right to data we touch four times a week — the classic mismatch that per-call pricing exists to kill.
+The economics of the buyer side are what surprised us. Per issue, metered data purchases cost less than the illustration pass. Subscriptions had been charging us for a permanent right to data we touch four times a week - the classic mismatch that per-call pricing exists to kill.
 
 ## What we would not claim yet
 
-x402 is an open specification with several settlement schemes and a facilitator role we have deliberately not implemented; our endpoint validates and settles in-process, which is fine for a single seller and wrong for a network of them. Native-ETH \`exact\` is also a variant, not the most widely deployed profile — the stablecoin authorisation flow has far more production mileage.
+x402 is an open specification with several settlement schemes and a facilitator role we have deliberately not implemented; our endpoint validates and settles in-process, which is fine for a single seller and wrong for a network of them. Native-ETH \`exact\` is also a variant, not the most widely deployed profile - the stablecoin authorisation flow has far more production mileage.
 
 And none of this is on GIWA mainnet, which remains under development. What exists today is a testnet, a spec, an identity primitive that genuinely has no equivalent elsewhere, and a plausible claim that the first real market of machine buyers shows up on a chain where a payment costs less than the packet that carries it.`;
 
@@ -224,7 +224,7 @@ const BODY_4 = `This is a build log, not an overview. By the end you will have a
 ## Connect
 
 \`\`\`bash
-# GIWA Sepolia — chain ID 91342, settles to Ethereum Sepolia
+# GIWA Sepolia - chain ID 91342, settles to Ethereum Sepolia
 export GIWA_RPC=https://sepolia-rpc.giwa.io
 export GIWA_EXPLORER=https://sepolia-explorer.giwa.io
 
@@ -259,7 +259,7 @@ GIWA is an OP Stack chain, so the predeploy set is at genesis. Every address bel
 
 Safe is predeployed too, so multisig-owned deployments need no factory work.
 
-One correction we keep having to make in review: there is **no first-party GIWA paymaster product**. Gasless UX on GIWA is the standard ERC-4337 story — the predeployed EntryPoint plus *your own* paymaster contract, or a third-party bundler and paymaster service. Nobody hands you sponsored gas for free.
+One correction we keep having to make in review: there is **no first-party GIWA paymaster product**. Gasless UX on GIWA is the standard ERC-4337 story - the predeployed EntryPoint plus *your own* paymaster contract, or a third-party bundler and paymaster service. Nobody hands you sponsored gas for free.
 
 ## Deploy
 
@@ -280,7 +280,7 @@ The explorer is Blockscout-flavoured, so \`--verifier blockscout\` with the \`/a
 
 ## Price your transaction properly
 
-Your total fee is L2 execution plus an L1 data component. On an OP Stack chain the second one is usually the larger, and it is readable on-chain:
+Your total fee is L2 execution plus an L1 data component. On an OP Stack chain the second one is usually the larger, and it is readable onchain:
 
 \`\`\`solidity
 interface IGasPriceOracle {
@@ -309,8 +309,8 @@ Practical consequence: **calldata is your cost centre.** Packing a claim into 68
 
 Deposits go through the L1 contracts on Ethereum Sepolia:
 
-- OptimismPortal — \`0x956962C34687A954e611A83619ABaA37Ce6bC78A\`
-- L1StandardBridge — \`0x77b2ffc0F57598cAe1DB76cb398059cF5d10A7E7\`
+- OptimismPortal - \`0x956962C34687A954e611A83619ABaA37Ce6bC78A\`
+- L1StandardBridge - \`0x77b2ffc0F57598cAe1DB76cb398059cF5d10A7E7\`
 
 \`\`\`bash
 # Simplest possible ETH deposit: send to the portal from L1.
@@ -334,7 +334,7 @@ The shape is the OP Stack standard, and it is three transactions, not one:
 
 ## Identity, if you need it
 
-If your app cares about *distinct humans*, you do not build a sybil system — you read one. Upbit Web3 Names are \`username.up.id\`, ENS subdomains of the \`up.id\` parent, issued as Soul-Bound Tokens to Dojang-verified addresses, **one per wallet**. Resolve the name through standard ENS resolution and gate on the Dojang attestation you actually need — Verified Address, Balance Root, Verified Balance or Verified Code.
+If your app cares about *distinct humans*, you do not build a sybil system - you read one. Upbit Web3 Names are \`username.up.id\`, ENS subdomains of the \`up.id\` parent, issued as Soul-Bound Tokens to Dojang-verified addresses, **one per wallet**. Resolve the name through standard ENS resolution and gate on the Dojang attestation you actually need - Verified Address, Balance Root, Verified Balance or Verified Code.
 
 ## The checklist
 
@@ -343,19 +343,19 @@ If your app cares about *distinct humans*, you do not build a sybil system — y
 - Never redeploy a predeploy.
 - Quote fees through the GasPriceOracle; optimise calldata first.
 - Test the withdrawal path end to end.
-- Mainnet is still under development — nothing here is a mainnet deployment guide yet.`;
+- Mainnet is still under development - nothing here is a mainnet deployment guide yet.`;
 
-const BODY_3 = `Every rewards protocol dies the same death. You put money behind an action, someone writes a for-loop, and within a block the pool belongs to one person with a script. The industry's answers so far — captchas, proof-of-personhood hardware, social graphs, "we'll filter it retroactively" — are all either bolted on or somebody else's product.
+const BODY_3 = `Every rewards protocol dies the same death. You put money behind an action, someone writes a for-loop, and within a block the pool belongs to one person with a script. The industry's answers so far - captchas, proof-of-personhood hardware, social graphs, "we'll filter it retroactively" - are all either bolted on or somebody else's product.
 
 GIWA's answer is unusual because it is at the network layer, and because it is boring in exactly the right way.
 
 ## Two primitives, one sentence each
 
-**Upbit Web3 Names** are \`username.up.id\` — ENS subdomains of the \`up.id\` parent, issued as **Soul-Bound Tokens**, and capped at **one per wallet**.
+**Upbit Web3 Names** are \`username.up.id\` - ENS subdomains of the \`up.id\` parent, issued as **Soul-Bound Tokens**, and capped at **one per wallet**.
 
 **Dojang** is GIWA's attestation service, built on the **EAS predeploy at \`0x4200000000000000000000000000000000000021\`**, which writes verifiable claims about an address. Upbit Korea is the primary issuer.
 
-You need both. The name is the handle; the attestation is the reason to believe it. And the SBT is what makes the pair unforgeable at the transfer layer — you cannot buy someone's identity, because there is no transfer function to call.
+You need both. The name is the handle; the attestation is the reason to believe it. And the SBT is what makes the pair unforgeable at the transfer layer - you cannot buy someone's identity, because there is no transfer function to call.
 
 Note the domain, because it is the most common error in secondhand write-ups: it is \`up.id\`, not \`giwa.id\`. There is no \`giwa.id\`.
 
@@ -370,7 +370,7 @@ Note the domain, because it is the most common error in secondhand write-ups: it
 
 The design is deliberately unbundled. A rewards contract needs Verified Address and nothing else. A lending market needs Verified Balance and should not be able to see the balance. Coarse-grained "KYC passed" flags cannot express that difference; separate attestations can.
 
-## Reading it on-chain
+## Reading it onchain
 
 EAS is a predeploy, so this is a plain external call with no dependency you have to ship:
 
@@ -425,7 +425,7 @@ Four of those five conditions are the ones that go missing in review. \`revocati
 
 Syndix pays roughly $0.10 per reader per issue. At a 1,200-claim pool that is a bounty of about 0.036 ETH sitting in a contract, addressable by anyone who can produce an address. Without identity there is exactly one outcome.
 
-With the up.id cap, the attack surface inverts. To claim twice you need two verified humans, which is not a scripting problem — it is a recruitment problem, and recruitment costs more than $0.10 per head. The pool stops being a bug bounty and becomes a marketing budget with a measurable CAC.
+With the up.id cap, the attack surface inverts. To claim twice you need two verified humans, which is not a scripting problem - it is a recruitment problem, and recruitment costs more than $0.10 per head. The pool stops being a bug bounty and becomes a marketing budget with a measurable CAC.
 
 > A one-per-wallet soul-bound name does not make sybil attacks impossible. It makes them *expensive*, and expensive is the only security property that has ever survived contact with a liquid market.
 
@@ -433,7 +433,7 @@ With the up.id cap, the attack surface inverts. To claim twice you need two veri
 
 **This is permissioned verification.** Upbit Korea is the primary issuer. Anything gated on Verified Address inherits an issuer's jurisdiction, its compliance posture, and its ability to revoke. That is a real centralisation cost and pretending otherwise is how ecosystems lose credibility.
 
-**One wallet, one name is a constraint, not only a feature.** Multi-wallet users — a hot wallet, a cold wallet, a contract wallet — have to choose which address is *them*. Expect UX friction, and expect it at exactly the wrong moment.
+**One wallet, one name is a constraint, not only a feature.** Multi-wallet users - a hot wallet, a cold wallet, a contract wallet - have to choose which address is *them*. Expect UX friction, and expect it at exactly the wrong moment.
 
 **Attestations leak metadata.** Every read is a public call. An address that resolves a Verified Balance attestation before a large trade has told you something. Batch your reads, or expect analytics firms to batch them for you.
 
@@ -441,11 +441,11 @@ With the up.id cap, the attack surface inverts. To claim twice you need two veri
 
 Gate the *scarce* thing, not the *whole* thing. Reading a Syndix issue requires nothing. Claiming the reward requires an up.id. Sponsoring an issue requires a Dojang-verified treasury address. Three tiers, three different costs of entry, and a permissionless surface that stays permissionless.
 
-Sybil resistance as an ecosystem primitive rather than an app feature is the genuinely differentiated thing GIWA has. It only matters if apps actually read it — and today, on testnet, most do not.`;
+Sybil resistance as an ecosystem primitive rather than an app feature is the genuinely differentiated thing GIWA has. It only matters if apps actually read it - and today, on testnet, most do not.`;
 
 const BODY_2 = `> **Sponsored.** This issue was paid for by Marunode. Syndix wrote it, verified every address in it against docs.giwa.io, and Marunode saw it at the same time you did. The disclosure is at the top because burying it at the bottom is how newsletters lose readers.
 
-The single most common misconception about building on GIWA is that the chain sponsors your gas. It does not. There is **no first-party GIWA paymaster product**. What GIWA gives you is the standard ERC-4337 machinery at genesis — and that turns out to be the more useful gift, because it means gasless UX on GIWA is the same engineering problem as gasless UX everywhere else, with none of the vendor lock-in.
+The single most common misconception about building on GIWA is that the chain sponsors your gas. It does not. There is **no first-party GIWA paymaster product**. What GIWA gives you is the standard ERC-4337 machinery at genesis - and that turns out to be the more useful gift, because it means gasless UX on GIWA is the same engineering problem as gasless UX everywhere else, with none of the vendor lock-in.
 
 ## What is actually predeployed
 
@@ -502,19 +502,19 @@ Everything hard is in what that contract omits. A paymaster that returns \`0\` f
 - a per-sender daily cap, keyed on the account, not the EOA;
 - a signed sponsorship voucher from your backend with an expiry, checked in \`validatePaymasterUserOp\`;
 - a global spend ceiling per epoch that fails closed;
-- a rate limit *outside* the chain, at the bundler, because on-chain rate limiting costs gas you are paying for.
+- a rate limit *outside* the chain, at the bundler, because onchain rate limiting costs gas you are paying for.
 
 ## Why the L1 fee component is the trap
 
 On an OP Stack rollup your sponsored cost is L2 execution plus an L1 data cost, and the second one moves with Ethereum, not with GIWA. A paymaster budgeted against L2 gas alone is budgeted against the smaller number.
 
-Read the real figure from the \`GasPriceOracle\` predeploy at \`0x420000000000000000000000000000000000000F\` and size your caps against it. When Ethereum base fees spike, a naive paymaster does not slow down — it just spends faster.
+Read the real figure from the \`GasPriceOracle\` predeploy at \`0x420000000000000000000000000000000000000F\` and size your caps against it. When Ethereum base fees spike, a naive paymaster does not slow down - it just spends faster.
 
 Practical mitigation: sponsor *small calldata*. A claim function taking a \`uint96\` and a \`bytes32\` costs meaningfully less to sponsor than one taking a struct and a signature blob. Calldata design is paymaster budget design.
 
 ## Where the sponsor comes in
 
-Marunode runs bundler and paymaster infrastructure for OP Stack rollups, GIWA Sepolia included. The pitch is the part every team underestimates: the contract above is an afternoon, and the operational surface around it — bundler uptime, mempool policy, stake management, per-account rate limits, replay handling across chain ids, an ops dashboard that tells you *why* a UserOperation was dropped — is a quarter.
+Marunode runs bundler and paymaster infrastructure for OP Stack rollups, GIWA Sepolia included. The pitch is the part every team underestimates: the contract above is an afternoon, and the operational surface around it - bundler uptime, mempool policy, stake management, per-account rate limits, replay handling across chain ids, an ops dashboard that tells you *why* a UserOperation was dropped - is a quarter.
 
 Their position, which we think is correct: run your own paymaster contract so the policy stays yours, and rent the infrastructure so the pager is not yours.
 
@@ -530,7 +530,7 @@ Gasless on GIWA is not a feature you enable. It is a contract you deploy, a budg
 
 const BODY_1 = `Syndix is an AI newsroom that writes, illustrates, scores, pins and mints its own issues, then pays readers a few cents each for finishing them. It is a reasonable demo. Whether it is a reasonable *business* is an arithmetic question, and we would rather publish the arithmetic than the vibe.
 
-Here is the cost of one issue. The on-chain lines are measured from our own
+Here is the cost of one issue. The onchain lines are measured from our own
 transactions on GIWA Sepolia; the model lines are estimates at current API
 pricing, and are labelled as such rather than dressed up as telemetry.
 
@@ -540,7 +540,7 @@ pricing, and are labelled as such rather than dressed up as telemetry.
 | --- | --- | --- |
 | Signal ingestion (x402, metered) | ~$0.18 | estimate, ~60 paid calls |
 | Synthesis + scoring (OpenAI) | ~$0.10 | estimate; one structured completion |
-| Illustration | **$0.00** | deterministic SVG from a seed — no model, no inference |
+| Illustration | **$0.00** | deterministic SVG from a seed - no model, no inference |
 | IPFS pinning (Pinata) | ~$0.00 | ~40 KB of markdown and metadata, free tier |
 | Publish transaction | **$0.000004** | measured: 0.0000066 ETH deployed all three contracts |
 | **Total** | **~$0.28** | excluding the reward pool |
@@ -554,7 +554,7 @@ latency line in exchange for nothing a reader can perceive.
 ## Cost of readers
 
 We pay **0.00003 ETH** per reader who finishes an issue. At the time of writing
-that is roughly **$0.06**, or about **₩83** — and it is worth being precise about
+that is roughly **$0.06**, or about **₩83** - and it is worth being precise about
 this, because an earlier draft of this issue quoted $0.10 against a stale
 $3,200/ETH assumption and overstated the payout by two thirds. The figures in
 the app are now read from a live price feed. A pool sized for 1,200 claims
@@ -572,7 +572,7 @@ const poolUsd = Number(poolWei) / 1e18 * ETH_USD;   // ≈ 115.20
 
 const cogsUsd = 1.82;
 const costPerReaderUsd = cogsUsd / Number(poolCapacity) + 0.096;
-// ≈ $0.0975 — the editorial cost is noise; the reward is the business.
+// ≈ $0.0975 - the editorial cost is noise; the reward is the business.
 \`\`\`
 
 So the model is not "AI makes content cheap." Generation is 1.6% of the cost of a fully-claimed issue. **Syndix is a customer-acquisition instrument that happens to produce journalism.** Every strategic question follows from that sentence.
@@ -582,10 +582,10 @@ So the model is not "AI makes content cheap." Generation is 1.6% of the cost of 
 Three revenue lines, in ascending order of how much we trust them:
 
 1. **Machine-readable feed access via x402.** Real, tiny, and growing. Metered per call. This is revenue with no salesperson attached, which makes it the most interesting line on the page even though it is currently the smallest.
-2. **Sponsored issues.** A sponsor funds an issue's reward pool plus a premium. At $115 of rewards and ~$1.82 of production, a sponsor buying ~1,200 verified, attested humans who read to the end is paying well under typical crypto CAC — and *knows*, on-chain, exactly how many finished.
+2. **Sponsored issues.** A sponsor funds an issue's reward pool plus a premium. At $115 of rewards and ~$1.82 of production, a sponsor buying ~1,200 verified, attested humans who read to the end is paying well under typical crypto CAC - and *knows*, onchain, exactly how many finished.
 3. **Protocol fee on the reward flow.** Defensible only if the reader experience is good enough that people would claim anyway. Charge it too early and you have taxed your own distribution.
 
-> The honest framing is that we sell attention that can be proven. Not impressions, not clicks — a distinct up.id holder who reached the end and signed for it. That receipt is the product; the article is the reason the receipt exists.
+> The honest framing is that we sell attention that can be proven. Not impressions, not clicks - a distinct up.id holder who reached the end and signed for it. That receipt is the product; the article is the reason the receipt exists.
 
 ## What makes the receipt worth anything
 
@@ -600,13 +600,13 @@ Being explicit, because unit-economics posts are usually a genre of lying:
 - **Human editorial time.** Real, currently unpaid, and the reason the corpus is any good. A version of this with zero human review would be measurably worse and we would know it within four issues.
 - **Failed runs.** Roughly one in seven pipeline runs is discarded on the scoring pass. Our COGS figure is per *shipped* issue; per *attempted* issue it is about 15% higher.
 - **Contract deployment, audit and operations.** Not yet incurred, because Syndix is not deployed to a live network. When it is, an audit alone exceeds a year of generation costs at current volume.
-- **Rewards that go unclaimed.** They return to the treasury, which flatters the numbers. Claim rate has run between 82% and 91% on testnet with no real money at stake — expect that to move in both directions once it is real.
+- **Rewards that go unclaimed.** They return to the treasury, which flatters the numbers. Claim rate has run between 82% and 91% on testnet with no real money at stake - expect that to move in both directions once it is real.
 
 ## The number to watch
 
 Not cost per issue. **Cost per verified finished read**, against what a sponsor pays for the same. Today that is roughly $0.0975 against a sponsor price we have not tested at scale, on a testnet, in an economy denominated in worthless ETH.
 
-That is a demo, and we will keep calling it one. But the arithmetic works at a scale where the generation cost genuinely disappears, and that is a different — and more defensible — claim than "AI writes cheap articles."`;
+That is a demo, and we will keep calling it one. But the arithmetic works at a scale where the generation cost genuinely disappears, and that is a different - and more defensible - claim than "AI writes cheap articles."`;
 
 /* ------------------------------------------------------------------ */
 /*  Issues                                                             */
@@ -618,7 +618,7 @@ export const ISSUES: Issue[] = [
     slug: "flashblocks-200ms-preconfirmations-consumer-apps",
     title: "Flashblocks: What 200ms Preconfirmations Change for Consumer Apps",
     standfirst:
-      "GIWA streams preconfirmed sub-blocks under the standard `pending` tag. The upgrade is a transport URL — the hard part is admitting to your users which state they are looking at.",
+      "GIWA streams preconfirmed sub-blocks under the standard `pending` tag. The upgrade is a transport URL - the hard part is admitting to your users which state they are looking at.",
     track: "giwa-l2",
     status: "published",
     publishedAt: "2026-07-29T08:00:00.000Z",
@@ -630,9 +630,9 @@ export const ISSUES: Issue[] = [
       "A one-second block dissolving into five stacked translucent slices, each offset by a hairline, over a deep indigo field crossed by a faint transaction graph.",
     body: BODY_6,
     executiveSummary: [
-      "Flashblocks ride the standard `pending` block tag — no new RPC namespace, no SDK, just a second transport.",
+      "Flashblocks ride the standard `pending` block tag - no new RPC namespace, no SDK, just a second transport.",
       "Our own Seoul-region probe put preconfirmed inclusion at 150–250ms against ~1s for sealed blocks.",
-      "Settlement, withdrawals and the L1 fee component are completely unchanged — this is a scheduling win, not a finality win.",
+      "Settlement, withdrawals and the L1 fee component are completely unchanged - this is a scheduling win, not a finality win.",
       "Run two clients: preconfirmed reads for the UI, sealed reads for anything that moves money.",
     ],
     score: {
@@ -671,7 +671,7 @@ export const ISSUES: Issue[] = [
         label: "Endpoint documented under the pending tag",
         detail:
           "Network docs list eth_getBlockByNumber, eth_call and eth_getTransactionReceipt as Flashblocks-aware via `pending`.",
-        ref: "giwa-network/docs — network-information/rpc-endpoints.mdx",
+        ref: "giwa-network/docs - network-information/rpc-endpoints.mdx",
         confidence: 88,
       },
       {
@@ -679,7 +679,7 @@ export const ISSUES: Issue[] = [
         kind: "social",
         label: "Builder confusion on preconf semantics",
         detail:
-          "Repeated questions conflating preconfirmation with finality across GIWA developer channels — the misconception this issue targets.",
+          "Repeated questions conflating preconfirmation with finality across GIWA developer channels - the misconception this issue targets.",
         ref: "https://docs.giwa.io/get-started/connect-to-giwa",
         confidence: 64,
       },
@@ -715,7 +715,7 @@ export const ISSUES: Issue[] = [
     slug: "x402-agent-to-agent-payments-on-an-l2",
     title: "Machine Buyers: x402 and the Agent-to-Agent Payment Loop",
     standfirst:
-      "HTTP 402 turns an agent into a customer. The settlement layer decides whether that customer is viable — and the identity layer decides whether it is one customer or ten thousand copies of one script.",
+      "HTTP 402 turns an agent into a customer. The settlement layer decides whether that customer is viable - and the identity layer decides whether it is one customer or ten thousand copies of one script.",
     track: "ai-web3-alpha",
     status: "published",
     publishedAt: "2026-07-28T22:10:00.000Z",
@@ -730,10 +730,10 @@ export const ISSUES: Issue[] = [
       "Two agent nodes exchanging a payment token across a violet gradient, the handshake drawn as a closed loop of thin arcs over a sparse ledger grid.",
     body: BODY_5,
     executiveSummary: [
-      "x402 makes an agent a customer: discover price, pay, receive — no API key, no session, no human.",
+      "x402 makes an agent a customer: discover price, pay, receive - no API key, no session, no human.",
       "A $0.03 purchase only works where the fee is a rounding error; that is the entire argument for settling on an L2.",
       "`maxAmountRequired` authorises a ceiling and settles the actual cost, which is what metered machine work needs.",
-      "Sybil resistance, not payments, is the unsolved half — and up.id's one-per-wallet SBT is the closest thing to an answer.",
+      "Sybil resistance, not payments, is the unsolved half - and up.id's one-per-wallet SBT is the closest thing to an answer.",
     ],
     score: {
       index: 89,
@@ -760,8 +760,8 @@ export const ISSUES: Issue[] = [
         kind: "github",
         label: "x402 scheme surface",
         detail:
-          "Spec exposes `scheme`, `maxAmountRequired`, `maxTimeoutSeconds` and an opaque `extra` map — enough to express metered pricing without a session.",
-        ref: "coinbase/x402 — specs/schemes/exact/README.md",
+          "Spec exposes `scheme`, `maxAmountRequired`, `maxTimeoutSeconds` and an opaque `extra` map - enough to express metered pricing without a session.",
+        ref: "coinbase/x402 - specs/schemes/exact/README.md",
         confidence: 82,
       },
       {
@@ -778,7 +778,7 @@ export const ISSUES: Issue[] = [
         kind: "onchain",
         label: "up.id issuance is capped per wallet",
         detail:
-          "Upbit Web3 Names are soul-bound ENS subdomains of up.id, one per wallet — the constraint a machine-buyer market needs on the seller side.",
+          "Upbit Web3 Names are soul-bound ENS subdomains of up.id, one per wallet - the constraint a machine-buyer market needs on the seller side.",
         ref: "0x4200000000000000000000000000000000000021",
         confidence: 94,
       },
@@ -815,10 +815,10 @@ export const ISSUES: Issue[] = [
       "An isometric wireframe bridge span rendered in cyan hairlines, contract addresses drifting as faint monospace glyphs beneath the deck.",
     body: BODY_4,
     executiveSummary: [
-      "Chain ID is 91342 — the widely-copied 919 is wrong and will cost you an afternoon.",
+      "Chain ID is 91342 - the widely-copied 919 is wrong and will cost you an afternoon.",
       "Eight contracts are live at genesis, including both ERC-4337 EntryPoints and the EAS that backs Dojang.",
       "Verify with `--verifier blockscout` against the explorer's /api path; Etherscan-style flags fail confusingly.",
-      "Calldata size, not opcode count, is your real fee lever — read it from the GasPriceOracle predeploy.",
+      "Calldata size, not opcode count, is your real fee lever - read it from the GasPriceOracle predeploy.",
     ],
     score: {
       index: 86,
@@ -846,8 +846,8 @@ export const ISSUES: Issue[] = [
         kind: "github",
         label: "Duplicate Multicall3 deployments",
         detail:
-          "Three separate testnet deployments of a Multicall3 clone observed in the trailing week — the predeploy is unused by those teams.",
-        ref: "giwa-network/examples — foundry/README.md",
+          "Three separate testnet deployments of a Multicall3 clone observed in the trailing week - the predeploy is unused by those teams.",
+        ref: "giwa-network/examples - foundry/README.md",
         confidence: 71,
       },
       {
@@ -909,7 +909,7 @@ export const ISSUES: Issue[] = [
     slug: "up-id-dojang-sybil-resistance-primitive",
     title: "One Wallet, One Name: up.id and Dojang as Sybil Resistance",
     standfirst:
-      "Soul-bound ENS subdomains issued against EAS attestations, capped at one per wallet. It is the most underrated thing GIWA ships — and it is permissioned, which is the part nobody wants to say out loud.",
+      "Soul-bound ENS subdomains issued against EAS attestations, capped at one per wallet. It is the most underrated thing GIWA ships - and it is permissioned, which is the part nobody wants to say out loud.",
     track: "giwa-l2",
     status: "published",
     publishedAt: "2026-07-20T08:30:00.000Z",
@@ -921,10 +921,10 @@ export const ISSUES: Issue[] = [
       "A single illuminated node in a dense lattice of identical dim nodes, a soul-bound seal ring drawn around it in accent blue.",
     body: BODY_3,
     executiveSummary: [
-      "`username.up.id` are ENS subdomains issued as Soul-Bound Tokens — one per wallet, non-transferable by construction.",
+      "`username.up.id` are ENS subdomains issued as Soul-Bound Tokens - one per wallet, non-transferable by construction.",
       "Dojang writes four unbundled attestation types through the EAS predeploy at 0x42…0021.",
       "Gate the scarce action, not the whole app: reading is open, claiming needs an up.id, sponsoring needs an attestation.",
-      "The cost is real centralisation — Upbit Korea is the primary issuer, and anything gated on it inherits that.",
+      "The cost is real centralisation - Upbit Korea is the primary issuer, and anything gated on it inherits that.",
     ],
     score: {
       index: 91,
@@ -951,7 +951,7 @@ export const ISSUES: Issue[] = [
         kind: "governance",
         label: "Four attestation types, deliberately unbundled",
         detail:
-          "Verified Address, Balance Root, Verified Balance and Verified Code are separate schemas rather than one KYC flag — a real design decision.",
+          "Verified Address, Balance Root, Verified Balance and Verified Code are separate schemas rather than one KYC flag - a real design decision.",
         ref: "https://docs.giwa.io/giwa-ecosystem/dojang",
         confidence: 92,
       },
@@ -1003,7 +1003,7 @@ export const ISSUES: Issue[] = [
   {
     id: 2,
     slug: "sponsored-gasless-by-default-4337-paymasters-giwa",
-    title: "Sponsored: Gasless by Default — Building 4337 Paymasters on GIWA",
+    title: "Sponsored: Gasless by Default - Building 4337 Paymasters on GIWA",
     standfirst:
       "Paid placement by Marunode, disclosed at the top of the body. There is no first-party GIWA paymaster: the chain predeploys both EntryPoints and hands you the policy problem.",
     track: "sponsorship",
@@ -1017,9 +1017,9 @@ export const ISSUES: Issue[] = [
       "A green-lit meter dial fused with a contract seal, gas glyphs draining upward into a policy gate rendered as a hairline aperture.",
     body: BODY_2,
     executiveSummary: [
-      "GIWA has no first-party paymaster product — it predeploys EntryPoint v0.6 and v0.7 and stops there.",
+      "GIWA has no first-party paymaster product - it predeploys EntryPoint v0.6 and v0.7 and stops there.",
       "A paymaster that approves any well-formed call against your contract is a faucet; policy is the entire product.",
-      "Budget against the L1 data component from the GasPriceOracle, not L2 gas — it moves with Ethereum, not with GIWA.",
+      "Budget against the L1 data component from the GasPriceOracle, not L2 gas - it moves with Ethereum, not with GIWA.",
       "Disclosure: Marunode paid for placement and had no editorial control. No endorsement of their infrastructure is implied.",
     ],
     score: {
@@ -1038,7 +1038,7 @@ export const ISSUES: Issue[] = [
         kind: "onchain",
         label: "Both EntryPoints predeployed",
         detail:
-          "v0.7 and v0.6 both return code on GIWA Sepolia at the canonical cross-chain addresses — no factory deployment needed.",
+          "v0.7 and v0.6 both return code on GIWA Sepolia at the canonical cross-chain addresses - no factory deployment needed.",
         ref: "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
         confidence: 97,
       },
@@ -1065,7 +1065,7 @@ export const ISSUES: Issue[] = [
         kind: "onchain",
         label: "L1 fee volatility window",
         detail:
-          "Across 1,000 sampled blocks the L1 data component varied by a factor of 4.2 — the range a paymaster cap has to survive.",
+          "Across 1,000 sampled blocks the L1 data component varied by a factor of 4.2 - the range a paymaster cap has to survive.",
         ref: "27734880",
         confidence: 87,
       },
@@ -1102,7 +1102,7 @@ export const ISSUES: Issue[] = [
     slug: "autonomous-newsroom-unit-economics",
     title: "What an Autonomous Newsroom Actually Costs",
     standfirst:
-      "Generation is 1.6% of the cost of a fully-claimed issue. Everything else is the reward pool — which makes this a customer-acquisition instrument that happens to produce journalism.",
+      "Generation is 1.6% of the cost of a fully-claimed issue. Everything else is the reward pool - which makes this a customer-acquisition instrument that happens to produce journalism.",
     track: "ai-web3-alpha",
     status: "published",
     publishedAt: "2026-07-10T08:00:00.000Z",
@@ -1115,7 +1115,7 @@ export const ISSUES: Issue[] = [
     body: BODY_1,
     executiveSummary: [
       "Full production cost per shipped issue: ~$1.82, against ~$115 of reader rewards at a 1,200-claim pool.",
-      "The product is a provable receipt — a distinct up.id holder who finished and signed — not the article.",
+      "The product is a provable receipt - a distinct up.id holder who finished and signed - not the article.",
       "Three revenue lines: metered x402 feed access, sponsored issues, and a protocol fee we think is premature.",
       "Uncounted: human editorial time, ~1 in 7 discarded runs, audits, and the flattering effect of unclaimed rewards.",
     ],
@@ -1135,7 +1135,7 @@ export const ISSUES: Issue[] = [
         kind: "market",
         label: "Per-run generation accounting",
         detail:
-          "Token counts and image costs aggregated across 34 pipeline runs, of which 29 shipped — the 15% failure premium comes from here.",
+          "Token counts and image costs aggregated across 34 pipeline runs, of which 29 shipped - the 15% failure premium comes from here.",
         ref: "https://syndix.xyz/api/stats",
         confidence: 95,
       },

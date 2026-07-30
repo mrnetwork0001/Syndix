@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 export interface LiveBlockProps {
   /**
-   * Block height the server rendered with, as a string — bigint is not
+   * Block height the server rendered with, as a string - bigint is not
    * serialisable across the server/client boundary. Shown until the first
    * client poll lands, so the number never flashes empty.
    */
@@ -24,7 +24,7 @@ const POLL_MS = 900;
  * Polls explicitly rather than using wagmi's `useBlockNumber({ watch })`. That
  * hook takes `pollingInterval` only inside its `poll: true` branch; passing the
  * interval without the flag lands in the WebSocket-subscription branch, which
- * never fires against GIWA's HTTP transport — the number silently froze. A
+ * never fires against GIWA's HTTP transport - the number silently froze. A
  * plain interval is one line longer and has no such failure mode.
  */
 export function LiveBlock({

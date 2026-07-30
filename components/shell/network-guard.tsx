@@ -32,7 +32,7 @@ export function NetworkGuard(): ReactElement | null {
         <p className="min-w-0 flex-1 text-[12.5px] leading-snug text-caution">
           Your wallet is on chain{" "}
           <span className="font-mono tabular-nums">{chainId}</span>. Syndix
-          settles on GIWA Sepolia ({GIWA_SEPOLIA_ID}) — rewards and claims will
+          settles on GIWA Sepolia ({GIWA_SEPOLIA_ID}) - rewards and claims will
           fail until you switch.
           {error ? (
             <span className="mt-0.5 block text-[11.5px] text-critical">

@@ -38,7 +38,7 @@ describe("fiat conversion", () => {
   });
 
   it("prices the reader reward from live rates", () => {
-    // 0.00003 ETH at $2000 is $0.06 — not the $0.10 the old constant implied.
+    // 0.00003 ETH at $2000 is $0.06 - not the $0.10 the old constant implied.
     expect(weiToUsd(REWARD_WEI)).toBeCloseTo(0.06, 6);
     expect(weiToKrw(REWARD_WEI)).toBeCloseTo(84, 6);
     expect(formatUsd(REWARD_WEI)).toBe("$0.06");

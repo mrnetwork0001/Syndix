@@ -21,7 +21,7 @@ const NAV = [
  *
  * The feed and /protocol are read-only, so wallet chrome there is noise that
  * implies a connection is needed to browse. Claiming happens on an issue page
- * and publishing in the studio — and the studio has no connect affordance of
+ * and publishing in the studio - and the studio has no connect affordance of
  * its own, so hiding the header control there would leave no way to connect at
  * all. The claim modal does have its own, which is why /issue would survive
  * either choice.
@@ -36,7 +36,7 @@ export function Header(): ReactElement {
     <header className="glass sticky top-0 z-50 border-x-0! border-t-0!">
       <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center gap-1.5 px-4 sm:gap-3 sm:px-6">
         {/* On wallet routes both flanks get an equal flex basis, which is what
-            actually centres the nav between them — `mx-auto` would only centre
+            actually centres the nav between them - `mx-auto` would only centre
             it in the leftover space and drift as the wallet label changes
             width. Without wallet chrome there is no right flank to balance
             against, so the nav keeps its right alignment. */}
@@ -49,7 +49,7 @@ export function Header(): ReactElement {
           <Link
             href="/"
             className="flex shrink-0 items-center gap-2 rounded-[10px] transition-opacity duration-200 hover:opacity-80"
-            aria-label="Syndix — home"
+            aria-label="Syndix - home"
           >
             <SyndixMark />
             <span className="hidden text-[15px] font-semibold tracking-[-0.028em] text-ink sm:inline">
@@ -117,7 +117,7 @@ export function Header(): ReactElement {
 }
 
 /**
- * "Giwa" (기와) are Korean roof tiles — two interlocking eaves tiles under a
+ * "Giwa" (기와) are Korean roof tiles - two interlocking eaves tiles under a
  * ridge tile that bridges the seam. Same idea as an L2 batching two rollups
  * of activity under one settlement layer, which is why it suits the mark.
  */

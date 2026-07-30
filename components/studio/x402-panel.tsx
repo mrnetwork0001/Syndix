@@ -21,7 +21,7 @@ const PAYMENT_HEADER = "x-payment";
  * A well-formed GIWA Sepolia tx hash used as the demo payment proof. With no
  * treasury deployed there is nothing to settle against, so the route answers
  * `accepted-unverified` and the panel says so rather than implying a payment
- * landed on-chain.
+ * landed onchain.
  */
 const DEMO_PAYMENT_TX =
   "0x18e738d79918dab34d85ed13794b602a9a087e11f34eb4a498710fe1d5df4067";
@@ -39,7 +39,7 @@ type Attempt = {
   body: string;
   settlement: string | null;
   durationMs: number;
-  /** Captured at request time — reading it during render would break SSR. */
+  /** Captured at request time - reading it during render would break SSR. */
   origin: string;
 };
 
@@ -184,9 +184,9 @@ export function X402Panel(): ReactElement {
           {attempt.settlement === "accepted-unverified" ? (
             <p className="text-[11px] leading-relaxed text-caution">
               Settlement reported as{" "}
-              <span className="font-mono">accepted-unverified</span> — the header
+              <span className="font-mono">accepted-unverified</span> - the header
               is well-formed but no treasury is deployed, so nothing was checked
-              on-chain. Deploy SyndixTreasury to switch this to{" "}
+              onchain. Deploy SyndixTreasury to switch this to{" "}
               <span className="font-mono">onchain</span>.
             </p>
           ) : null}

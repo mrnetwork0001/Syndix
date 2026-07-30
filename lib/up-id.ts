@@ -6,16 +6,16 @@ import { UPNAME_REGISTRY, UP_ID_METADATA_BASE, GIWA_EXPLORER } from "@/lib/giwa"
  * WHY THIS IS NOT A CONTRACT CALL
  *
  * The live registry is an ERC-721 whose tokenId is the ENS namehash of the
- * name. It is not ERC-721Enumerable — `tokenOfOwnerByIndex` reverts and
- * `supportsInterface(0x780e9d63)` returns false — so there is no view function
+ * name. It is not ERC-721Enumerable - `tokenOfOwnerByIndex` reverts and
+ * `supportsInterface(0x780e9d63)` returns false - so there is no view function
  * that maps an address to the token it holds, and a namehash cannot be
  * inverted. The label genuinely lives off-chain, behind `tokenURI`.
  *
- * So the on-chain half of identity and the display half are separate concerns,
+ * So the onchain half of identity and the display half are separate concerns,
  * and only the first one carries the security property:
  *
  *   - `UpIdReaderRegistry.isVerified(addr)` → `balanceOf(addr) > 0`. This is
- *     what `SyndixTreasury` gates claims on. On-chain, trustless, and the
+ *     what `SyndixTreasury` gates claims on. Onchain, trustless, and the
  *     only thing that stops a sybil script draining the reward pool.
  *   - `resolveUpIdName(addr)` → the human-readable label, for display only.
  *     A wrong or missing answer here costs nothing but a nicer greeting.
@@ -57,7 +57,7 @@ async function nameFromMetadata(tokenId: string): Promise<string | null> {
 /**
  * Returns the `*.up.id` label held by `address`, or null.
  *
- * Null means "could not resolve the label", never "not verified" — those are
+ * Null means "could not resolve the label", never "not verified" - those are
  * different questions and only the contract answers the second one.
  */
 export async function resolveUpIdName(address: string): Promise<string | null> {
@@ -74,7 +74,7 @@ export async function resolveUpIdName(address: string): Promise<string | null> {
     return null;
   }
 
-  // Match on the contract address, not the symbol — a symbol is not unique and
+  // Match on the contract address, not the symbol - a symbol is not unique and
   // any deployer can mint a token calling itself UPNAME.
   const target = UPNAME_REGISTRY.toLowerCase();
   const held = items.find((item) => {

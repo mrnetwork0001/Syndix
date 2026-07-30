@@ -10,7 +10,7 @@ import {
 import type { X402Challenge, X402Requirement } from "./types";
 
 /**
- * Nodit x402 — HTTP 402 "Payment Required" for machine buyers.
+ * Nodit x402 - HTTP 402 "Payment Required" for machine buyers.
  *
  * The premise: an autonomous agent that wants Syndix's raw alpha feed should be
  * able to pay for a single request over HTTP instead of signing up for an API
@@ -18,7 +18,7 @@ import type { X402Challenge, X402Requirement } from "./types";
  * settles on GIWA, and retries with the transaction hash in `X-PAYMENT`.
  *
  * GIWA is a good settlement layer for this specifically because the payment is
- * worth ~$0.02 — on a chain with 1s blocks and sub-cent fees the gas does not
+ * worth ~$0.02 - on a chain with 1s blocks and sub-cent fees the gas does not
  * eat the invoice.
  */
 
@@ -101,7 +101,7 @@ export async function verifyX402Payment(
       ok: true,
       mode: "accepted-unverified",
       txHash,
-      note: "SyndixTreasury is not deployed on GIWA Sepolia, so no settlement check was performed. Set NEXT_PUBLIC_SYNDIX_TREASURY to enable on-chain verification.",
+      note: "SyndixTreasury is not deployed on GIWA Sepolia, so no settlement check was performed. Set NEXT_PUBLIC_SYNDIX_TREASURY to enable onchain verification.",
     };
   }
 

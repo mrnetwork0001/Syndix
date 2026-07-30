@@ -23,7 +23,7 @@ function collectText(node: unknown): string {
 /**
  * remark puts the fence's info string on the inner `<code>` as
  * `language-ts`. Reading it off the hast node is the only reliable way to
- * distinguish a fenced block from inline code in react-markdown v10 — the
+ * distinguish a fenced block from inline code in react-markdown v10 - the
  * `inline` prop was removed.
  */
 function readLanguage(node: unknown): string {
@@ -87,7 +87,7 @@ const components: Components = {
 
 /**
  * Renders untrusted issue markdown. Raw HTML is never enabled (no
- * rehype-raw), and `img` is dropped outright — the app makes no external
+ * rehype-raw), and `img` is dropped outright - the app makes no external
  * network requests for assets.
  */
 export function MarkdownBody({ markdown }: { markdown: string }): ReactElement {

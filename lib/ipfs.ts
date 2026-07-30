@@ -2,7 +2,7 @@
  * IPFS pinning via Pinata.
  *
  * Until this existed, `contentURI` values were authored CIDs that resolved to
- * nothing — the on-chain pointer was decorative. Now a generated issue is
+ * nothing - the onchain pointer was decorative. Now a generated issue is
  * actually pinned before it is published, so `contentURI` and `tokenURI` point
  * at retrievable content.
  *
@@ -18,7 +18,7 @@ const PINATA_JSON_ENDPOINT = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
  *
  * Deliberately not Pinata's: their public gateway rate-limits CIDs that are not
  * pinned to the calling account, returning 429 for both real and missing
- * content — which makes it impossible to tell "busy" from "does not exist".
+ * content - which makes it impossible to tell "busy" from "does not exist".
  * ipfs.io serves any CID and answers 200 vs 5xx, so a failure is diagnosable.
  * Pinata is still the write path in `pinIssueMetadata`.
  */
@@ -36,7 +36,7 @@ export function ipfsGatewayUrl(uri: string): string {
 export interface IssueMetadata {
   name: string;
   description: string;
-  /** Markdown body — the actual issue. */
+  /** Markdown body - the actual issue. */
   content: string;
   /** Takeaway bullets. Pinned because the reader renders them as a panel and
    *  there is nowhere else to recover them from once the run is over. */

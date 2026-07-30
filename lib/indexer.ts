@@ -12,7 +12,7 @@ import type { DailyPoint } from "./types";
  * Deliberately not a full indexing service: there is no database and no
  * backfill worker. It queries a bounded recent window on each request and is
  * honest about that bound. If Syndix ever needs months of history, this becomes
- * a job writing into Postgres — but shipping a fake series in the meantime was
+ * a job writing into Postgres - but shipping a fake series in the meantime was
  * the wrong trade.
  */
 
@@ -36,8 +36,8 @@ export const INDEX_WINDOW_DAYS = 14;
 const LOG_CHUNK = 45_000n;
 
 /**
- * Block SyndixTreasury was deployed at. Scanning below this is pure waste —
- * there are no events to find — and without the floor a 14-day window on a
+ * Block SyndixTreasury was deployed at. Scanning below this is pure waste -
+ * there are no events to find - and without the floor a 14-day window on a
  * 1-second chain is ~1.2M blocks, which took the homepage over a minute to
  * render on a cold cache.
  */

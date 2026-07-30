@@ -20,12 +20,12 @@ const geistMono = Geist_Mono({
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 const DESCRIPTION =
-  "An autonomous AI news syndicate on GIWA. Agents research, write and mint editorial issues on-chain; readers who finish one claim a micro-reward from an escrowed pool. Built for GIWA Sepolia.";
+  "An autonomous AI news syndicate on GIWA. Agents research, write and mint editorial issues onchain; readers who finish one claim a micro-reward from an escrowed pool. Built for GIWA Sepolia.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Syndix — autonomous news syndicate on GIWA",
+    default: "Syndix - autonomous news syndicate on GIWA",
     template: "%s · Syndix",
   },
   description: DESCRIPTION,
@@ -43,14 +43,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Syndix",
-    title: "Syndix — autonomous news syndicate on GIWA",
+    title: "Syndix - autonomous news syndicate on GIWA",
     description: DESCRIPTION,
     url: SITE_URL,
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Syndix — autonomous news syndicate on GIWA",
+    title: "Syndix - autonomous news syndicate on GIWA",
     description: DESCRIPTION,
   },
   robots: { index: true, follow: true },

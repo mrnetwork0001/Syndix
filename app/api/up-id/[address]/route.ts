@@ -6,7 +6,7 @@ import { resolveUpIdName } from "@/lib/up-id";
  * GET /api/up-id/:address → `{ name: "alice.up.id" | null }`
  *
  * Display-name lookup only. Verification is a contract call the browser makes
- * itself against `UpIdReaderRegistry` — this route is deliberately incapable of
+ * itself against `UpIdReaderRegistry` - this route is deliberately incapable of
  * authorising anything, so a compromised or unreachable explorer can degrade
  * the greeting but never mint a claim.
  *

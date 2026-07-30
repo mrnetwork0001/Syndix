@@ -11,7 +11,7 @@ export function cn(...inputs: ClassValue[]) {
 /*  Money                                                              */
 /* ------------------------------------------------------------------ */
 
-/** @deprecated Read `getAmbientRates()` instead — these were static guesses. */
+/** @deprecated Read `getAmbientRates()` instead - these were static guesses. */
 export const ETH_USD_FALLBACK = 1911;
 
 export function weiToEth(wei: string | bigint): number {
@@ -22,7 +22,7 @@ export function weiToEth(wei: string | bigint): number {
  * Micro-amounts are the product here, not a rounding nuisance.
  *
  * A reader reward is 0.00003 ETH and gas is ~0.00000018 ETH. Flooring those to
- * "<0.0001 ETH" — as this did — hides the exact number the contract pays and
+ * "<0.0001 ETH" - as this did - hides the exact number the contract pays and
  * reads as a bug. Anything smaller than `dp` allows therefore gets the extra
  * precision it needs rather than a floor; larger amounts keep the requested
  * decimals, so the treasury tiles are unchanged.
@@ -82,7 +82,7 @@ export function formatPct(n: number, dp = 0): string {
 
 /**
  * Deterministic relative time. Takes `now` explicitly so server and client
- * renders agree — passing Date.now() implicitly is the classic source of
+ * renders agree - passing Date.now() implicitly is the classic source of
  * React hydration mismatches on timestamps.
  */
 export function relativeTime(iso: string, now: number): string {
@@ -118,7 +118,7 @@ export function formatMs(ms: number): string {
 /* ------------------------------------------------------------------ */
 
 export function shortHash(hash?: string): string {
-  if (!hash) return "—";
+  if (!hash) return "-";
   return `${hash.slice(0, 10)}…${hash.slice(-6)}`;
 }
 
@@ -127,7 +127,7 @@ export const sleep = (ms: number) =>
 
 /**
  * Small deterministic PRNG (mulberry32) seeded from a string. Used for cover
- * art and simulated telemetry so every render — server or client — is stable.
+ * art and simulated telemetry so every render - server or client - is stable.
  */
 export function seededRandom(seed: string): () => number {
   let h = 1779033703 ^ seed.length;

@@ -88,7 +88,7 @@ export function ExecSummary({ issue }: { issue: Issue }): ReactElement {
               Provenance
             </span>
             <span className="text-[11.5px] text-ink-muted">
-              Editorial seed — written by hand, no generation run to report
+              Editorial seed - written by hand, no generation run to report
             </span>
           </>
         )}

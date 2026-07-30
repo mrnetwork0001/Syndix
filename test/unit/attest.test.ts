@@ -14,7 +14,7 @@ import { GIWA_SEPOLIA_ID } from "@/lib/giwa";
  *
  * If the EIP-712 type string in lib/attest.ts ever drifts from the typehash in
  * SyndixTreasury.sol, every signature recovers to the wrong address and every
- * claim reverts with InvalidAttestation — at runtime, on chain, with nothing in
+ * claim reverts with InvalidAttestation - at runtime, on chain, with nothing in
  * TypeScript to catch it. This reconstructs the type string from our own
  * definition and asserts it against the contract source.
  */

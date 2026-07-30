@@ -98,7 +98,7 @@ describe("up.id reverse resolution", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  /** A label lookup failing must never read as "not verified" — that is a contract call. */
+  /** A label lookup failing must never read as "not verified" - that is a contract call. */
   it("returns null rather than throwing when the explorer is down", async () => {
     vi.stubGlobal(
       "fetch",
@@ -128,7 +128,7 @@ describe("registry identification", () => {
     expect(isRealUpIdRegistry(UP_ID_READER_REGISTRY.toLowerCase())).toBe(true);
   });
 
-  /** The mock must never be mistaken for the real thing — the UI copy differs. */
+  /** The mock must never be mistaken for the real thing - the UI copy differs. */
   it("does not recognise the mock registry or an absent one", () => {
     expect(isRealUpIdRegistry("0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d")).toBe(false);
     expect(isRealUpIdRegistry(undefined)).toBe(false);

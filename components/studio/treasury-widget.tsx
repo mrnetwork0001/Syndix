@@ -69,13 +69,13 @@ export function TreasuryWidget({
         <Figure
           icon={Wallet}
           label="Sponsor treasury"
-          hint="unreservedBalance() — the only wei the owner can withdraw"
+          hint="unreservedBalance() - the only wei the owner can withdraw"
           wei={unreservedWei}
         />
         <Figure
           icon={Lock}
           label="Reader reward pool"
-          hint="reservedRewards — escrowed against unclaimed reads"
+          hint="reservedRewards - escrowed against unclaimed reads"
           wei={reservedWei}
           accent
         />
@@ -130,7 +130,7 @@ export function TreasuryWidget({
           </Button>
           {!IS_LIVE_CHAIN ? (
             <p className="mt-2 text-center text-[11px] text-ink-faint">
-              Contract not deployed — set{" "}
+              Contract not deployed - set{" "}
               <span className="font-mono">NEXT_PUBLIC_SYNDIX_TREASURY</span> to
               enable deposits.
             </p>

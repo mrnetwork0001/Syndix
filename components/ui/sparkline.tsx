@@ -11,7 +11,7 @@ const TONES = {
   cyan: "#22d3ee",
 } as const;
 
-/** FNV-1a — gives each instance a stable, collision-free gradient id. */
+/** FNV-1a - gives each instance a stable, collision-free gradient id. */
 function hashId(input: string): string {
   let h = 2166136261;
   for (let i = 0; i < input.length; i++) {

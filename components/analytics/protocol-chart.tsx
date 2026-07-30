@@ -42,7 +42,7 @@ const MONTHS = [
   "Dec",
 ];
 
-/** Formats "2026-07-14" without touching Date — no timezone drift on the axis. */
+/** Formats "2026-07-14" without touching Date - no timezone drift on the axis. */
 function shortDate(iso: string): string {
   const [, month, day] = iso.split("-");
   const index = Number(month) - 1;

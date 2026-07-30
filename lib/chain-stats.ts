@@ -28,7 +28,7 @@ export interface LiveProtocolStats {
   /** Wei per unit gas at the time of reading. */
   gasPriceWei: bigint;
   blockNumber: bigint;
-  /** `balance >= reservedRewards` — the solvency invariant, checked live. */
+  /** `balance >= reservedRewards` - the solvency invariant, checked live. */
   solvent: boolean;
 }
 

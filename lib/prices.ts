@@ -7,7 +7,7 @@
  * value at all, so the rates are fetched.
  *
  * Both pairs come from one request so USD and KRW can never disagree with each
- * other — deriving KRW from a separate USD/KRW feed let rounding drift between
+ * other - deriving KRW from a separate USD/KRW feed let rounding drift between
  * the two figures shown side by side.
  */
 
@@ -37,7 +37,7 @@ const PRICE_URL =
 const CACHE_TTL_MS = 10 * 60 * 1000;
 let cached: { at: number; rates: RatesSnapshot } | null = null;
 
-/** Server-side. Cached, and never throws — a failed fetch yields the fallback. */
+/** Server-side. Cached, and never throws - a failed fetch yields the fallback. */
 export async function fetchRates(): Promise<RatesSnapshot> {
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.rates;
 
@@ -78,7 +78,7 @@ export async function fetchRates(): Promise<RatesSnapshot> {
  * Module-level rather than threaded through 34 call sites as a parameter,
  * because the rate is a global fact rather than per-component state. The layout
  * fetches it once per render and hands the same snapshot to the client
- * provider, which installs it before anything paints — so server HTML and
+ * provider, which installs it before anything paints - so server HTML and
  * client hydration format identical strings. Getting that wrong would show as
  * a hydration mismatch on every price on the page.
  */

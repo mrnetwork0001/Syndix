@@ -93,7 +93,7 @@ export function ConnectButton(): ReactElement {
         window.setTimeout(() => setCopied(false), 1500);
       })
       .catch(() => {
-        // Clipboard is unavailable outside secure contexts — fail quietly.
+        // Clipboard is unavailable outside secure contexts - fail quietly.
       });
   }, [address]);
 
@@ -125,7 +125,7 @@ export function ConnectButton(): ReactElement {
               Available wallets
             </p>
             {/* wagmi types useConnectors() as a non-empty tuple, so a direct
-                length check is statically impossible. Widen to a plain array —
+                length check is statically impossible. Widen to a plain array -
                 the list really can be empty when no EIP-6963 provider injects. */}
             {[...connectors].length === 0 ? (
               <div className="px-3 pt-1 pb-3">
@@ -184,7 +184,7 @@ export function ConnectButton(): ReactElement {
 
   const upId = upIdName?.endsWith(UP_ID_SUFFIX) ? upIdName : null;
   // A verified reader with no resolvable label still gets a truthful badge
-  // rather than a blank — the name lives off-chain and the lookup can fail.
+  // rather than a blank - the name lives off-chain and the lookup can fail.
   const label = upId ?? shortenAddress(address);
   const gradient = addressGradient(address);
 
@@ -211,7 +211,7 @@ export function ConnectButton(): ReactElement {
         <span className="min-w-0 truncate text-[13px] font-medium text-ink">
           {label}
         </span>
-        {/* Balance lives in the dropdown only — the trigger names the account. */}
+        {/* Balance lives in the dropdown only - the trigger names the account. */}
         <ChevronDown className="size-3.5 shrink-0 text-ink-faint" strokeWidth={2} />
       </button>
 
@@ -234,7 +234,7 @@ export function ConnectButton(): ReactElement {
             <div className="mt-3 flex items-center justify-between gap-3 rounded-[10px] bg-white/[0.035] px-2.5 py-2">
               <span className="text-[11.5px] text-ink-muted">Balance</span>
               <span className="font-mono text-[12.5px] tabular-nums text-ink">
-                {balance ? formatEth(balance.value) : "—"}
+                {balance ? formatEth(balance.value) : "-"}
               </span>
             </div>
           </div>

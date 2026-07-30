@@ -41,7 +41,7 @@ import {
 
 /**
  * Everything the studio needs to know about the archive. Deliberately not the
- * whole `Issue[]` — this is a client component, so every field would be
+ * whole `Issue[]` - this is a client component, so every field would be
  * serialised into the RSC payload, and the markdown bodies alone are tens of
  * kilobytes the studio never reads.
  */
@@ -51,7 +51,7 @@ export interface ArchiveSummary {
   nextIssueId: number;
 }
 
-/** 0.00003 ETH per reader, matching the existing on-chain issues. */
+/** 0.00003 ETH per reader, matching the existing onchain issues. */
 const REWARD_PER_READER_WEI = "30000000000000";
 /** How many claims a freshly published issue is funded for. */
 const CLAIMS_FUNDED = 20;
@@ -328,7 +328,7 @@ export function PipelineControls({
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
         const parts = buffer.split("\n");
-        // The last element is either "" or a partial line — keep it buffered.
+        // The last element is either "" or a partial line - keep it buffered.
         buffer = parts.pop() ?? "";
         for (const part of parts) dispatch(part);
       }
@@ -350,11 +350,11 @@ export function PipelineControls({
 
 
   /**
-   * Publishes the generated draft on-chain for real.
+   * Publishes the generated draft onchain for real.
    *
    * Requires the connected wallet to be the treasury owner, since
-   * publishArticle is onlyOwner, and requires a pinned contentURI — publishing
-   * a pointer to nothing is exactly the kind of decorative on-chain write this
+   * publishArticle is onlyOwner, and requires a pinned contentURI - publishing
+   * a pointer to nothing is exactly the kind of decorative onchain write this
    * project is trying not to ship.
    */
   const runPublish = useCallback(async () => {
@@ -422,7 +422,7 @@ export function PipelineControls({
     if (mode === "live") {
       return (
         <Badge tone="positive" dot>
-          Live — OpenAI
+          Live - OpenAI
         </Badge>
       );
     }
@@ -444,7 +444,7 @@ export function PipelineControls({
       <Panel>
         <PanelHeader
           title="Pipeline"
-          description={`The four stages of the Syndix ingestion agent. ${archive.count} issues in the archive — the next run drafts #${archive.nextIssueId}.`}
+          description={`The four stages of the Syndix ingestion agent. ${archive.count} issues in the archive - the next run drafts #${archive.nextIssueId}.`}
           icon={Cpu}
           action={
             <div className="flex items-center gap-2">
@@ -534,7 +534,7 @@ export function PipelineControls({
         <div className="border-t border-hairline px-5 py-3.5">
           <p className="text-[11px] leading-relaxed text-ink-faint">
             {mode === "live"
-              ? "OPENAI_API_KEY is set — this issue was written by OpenAI against live GIWA Sepolia head state, and pinned to IPFS if PINATA_JWT is set."
+              ? "OPENAI_API_KEY is set - this issue was written by OpenAI against live GIWA Sepolia head state, and pinned to IPFS if PINATA_JWT is set."
               : "Set OPENAI_API_KEY in .env.local to switch the studio from the recorded trace to real generation. The chain scan reads live head state either way."}
           </p>
         </div>
@@ -546,7 +546,7 @@ export function PipelineControls({
                 <TriangleAlert className="mt-px size-3.5 shrink-0" strokeWidth={2} />
                 <span>
                   This draft has no pinned contentURI, so publishing is
-                  disabled — an on-chain pointer to nothing is worse than no
+                  disabled - an onchain pointer to nothing is worse than no
                   pointer. Set PINATA_JWT and regenerate.
                 </span>
               </p>

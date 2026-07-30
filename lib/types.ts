@@ -1,4 +1,4 @@
-/** Editorial tracks — drive the feed filter tabs. */
+/** Editorial tracks - drive the feed filter tabs. */
 export type TrackId =
   | "giwa-l2"
   | "ai-web3-alpha"
@@ -86,7 +86,7 @@ export interface GenerationTrace {
   /**
    * Where the issue actually came from.
    *
-   * `editorial-seed` issues were written by hand for the launch dataset — they
+   * `editorial-seed` issues were written by hand for the launch dataset - they
    * have no model, no token count and no cost, and every surface must avoid
    * attributing them to a pipeline run. `agent` issues really were produced by
    * the ingestion agent, so their telemetry is measured.
@@ -154,7 +154,7 @@ export interface AgentLogLine {
   stage: AgentStage;
   level: "info" | "ok" | "warn" | "error";
   message: string;
-  /** Optional monospace detail — tx hash, CID, token count. */
+  /** Optional monospace detail - tx hash, CID, token count. */
   meta?: string;
 }
 

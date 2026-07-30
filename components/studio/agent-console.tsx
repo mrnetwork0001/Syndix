@@ -170,7 +170,7 @@ export function AgentConsole({
       <div className="flex items-center justify-between gap-3 border-b border-hairline bg-void/40 px-4 py-2">
         <span className="inline-flex items-center gap-2 font-mono text-[11px] text-ink-faint">
           <Terminal className="size-3.5" strokeWidth={1.9} />
-          agent@syndix — pipeline
+          agent@syndix - pipeline
         </span>
         <span className="inline-flex items-center gap-3 font-mono text-[11px] text-ink-faint tabular-nums">
           <span>{log.length} lines</span>

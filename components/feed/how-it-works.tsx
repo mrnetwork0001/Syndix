@@ -8,7 +8,7 @@ import { cn, formatEth, formatUsd } from "@/lib/utils";
 export interface HowItWorksProps {
   /** `rewardPerReader` from the newest article, in wei. */
   rewardPerReaderWei?: string;
-  /** `minDwellSeconds` from the treasury — the contract rejects anything shorter. */
+  /** `minDwellSeconds` from the treasury - the contract rejects anything shorter. */
   minDwellSeconds: number;
   /** Claims still funded across every active article. */
   claimsRemaining?: number;
@@ -19,7 +19,7 @@ export interface HowItWorksProps {
  * The reader's path, stated on the page they land on.
  *
  * Syndix reads as a publishing platform to a first-time visitor, and it is not
- * one — nobody submits an article and nothing is moderated. What a visitor can
+ * one - nobody submits an article and nothing is moderated. What a visitor can
  * actually do is get paid to read, and every requirement for that is on chain
  * and checkable: hold a `up.id`, dwell past `minDwellSeconds`, receive
  * `rewardPerReader`. Those three numbers are read from the contract rather than
@@ -35,7 +35,7 @@ export function HowItWorks({
   claimsRemaining,
   className,
 }: HowItWorksProps): ReactElement {
-  // Lead with fiat and keep ETH secondary, the same way the claim bar does —
+  // Lead with fiat and keep ETH secondary, the same way the claim bar does -
   // a reader decides on "six cents", not on a wei count.
   const rewardFiat = rewardPerReaderWei ? formatUsd(rewardPerReaderWei) : null;
   const rewardEth = rewardPerReaderWei ? formatEth(rewardPerReaderWei) : null;
@@ -46,7 +46,7 @@ export function HowItWorks({
       label: "Get a up.id",
       body: (
         <>
-          One soul-bound name per wallet, issued by GIWA — this is what caps the
+          One soul-bound name per wallet, issued by GIWA - this is what caps the
           reward at one claim per human. Syndix cannot mint you one; it only
           checks that you hold it.
         </>
@@ -71,7 +71,7 @@ export function HowItWorks({
           Open any issue and read it. Past{" "}
           <Mono className="text-[11.5px] text-ink-muted">{`${minDwellSeconds}s`}</Mono>{" "}
           the attester signs an EIP-712 proof of your dwell time. It is a
-          signature, not an approval — no human reviews your claim.
+          signature, not an approval - no human reviews your claim.
         </>
       ),
       action: null,

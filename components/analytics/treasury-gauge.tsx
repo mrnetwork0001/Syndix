@@ -94,7 +94,7 @@ export function TreasuryGauge({
         <Lock className="mt-px size-3.5 shrink-0 text-ink-faint" strokeWidth={2} />
         <span>
           Reserved funds are escrowed per issue and are not reachable by the
-          protocol owner — <code className="font-mono text-[11.5px] text-[#c9d7ff]">SyndixTreasury.sol</code>{" "}
+          protocol owner - <code className="font-mono text-[11.5px] text-[#c9d7ff]">SyndixTreasury.sol</code>{" "}
           reverts any owner withdrawal that would drop the balance below{" "}
           <code className="font-mono text-[11.5px] text-[#c9d7ff]">totalReserved</code>,
           so every unclaimed reward stays payable.

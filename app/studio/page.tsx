@@ -11,7 +11,7 @@ import { X402Panel } from "@/components/studio/x402-panel";
 export const metadata: Metadata = {
   title: "Agent Studio · Syndix",
   description:
-    "Watch the Syndix ingestion agent scan GIWA Sepolia, draft an issue, illustrate it, and publish — with the treasury and x402 machine-payment surfaces alongside.",
+    "Watch the Syndix ingestion agent scan GIWA Sepolia, draft an issue, illustrate it, and publish - with the treasury and x402 machine-payment surfaces alongside.",
 };
 
 export default async function StudioPage() {
@@ -42,8 +42,8 @@ export default async function StudioPage() {
           Agent Studio
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-ink-muted text-pretty">
-          Drive the Syndix ingestion agent end to end — scan GIWA Sepolia, draft
-          the issue, generate the cover, and publish it on-chain.
+          Drive the Syndix ingestion agent end to end - scan GIWA Sepolia, draft
+          the issue, generate the cover, and publish it onchain.
         </p>
       </header>
 

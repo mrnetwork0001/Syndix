@@ -64,7 +64,7 @@ const DENSITY: Record<TrackId, { arcs: number; ridges: number; nodes: number }> 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 
-/** FNV-1a — namespaces every gradient/mask id so cards never collide. */
+/** FNV-1a - namespaces every gradient/mask id so cards never collide. */
 function hashId(input: string): string {
   let h = 2166136261;
   for (let i = 0; i < input.length; i++) {

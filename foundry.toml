@@ -1,7 +1,7 @@
 [profile.default]
 src = "contracts"
 out = "out"
-# Solidity deps live under contracts/lib — the top-level lib/ is the app's
+# Solidity deps live under contracts/lib - the top-level lib/ is the app's
 # TypeScript module directory and the two must not share a namespace.
 libs = ["node_modules", "contracts/lib"]
 test = "test/contracts"

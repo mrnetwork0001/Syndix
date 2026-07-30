@@ -24,7 +24,7 @@ const KIND_ICON: Record<SourceSignal["kind"], LucideIcon> = {
 };
 
 const KIND_LABEL: Record<SourceSignal["kind"], string> = {
-  onchain: "On-chain",
+  onchain: "Onchain",
   github: "Repo",
   governance: "Governance",
   market: "Market",
@@ -39,7 +39,7 @@ const URL = /^https?:\/\//i;
 /**
  * A signal `ref` is a tx hash, a block height, an address, a URL or a repo
  * path depending on `kind`. Anything that resolves on the GIWA explorer gets
- * linked — that is the difference between a citation and a claim.
+ * linked - that is the difference between a citation and a claim.
  */
 function refTarget(ref: string): { href: string; external: boolean } | null {
   if (TX_HASH.test(ref)) return { href: explorerTx(ref), external: false };

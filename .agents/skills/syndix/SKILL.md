@@ -6,11 +6,11 @@ description: Architecture, verified GIWA Sepolia network facts, design tokens, a
 # Syndix
 
 Autonomous AI news syndicate and reader micro-reward protocol on GIWA (OP Stack L2 by
-Dunamu/Upbit). GIWA GASOK accelerator submission — Track 04 (AI/Web3) + Track 02
+Dunamu/Upbit). GIWA GASOK accelerator submission - Track 04 (AI/Web3) + Track 02
 (Consumer/Social).
 
 The product loop: an agent reads GIWA chain state and ecosystem signals, writes a
-newsletter issue, mints it on-chain, and pays verified readers a micro-reward for reading
+newsletter issue, mints it onchain, and pays verified readers a micro-reward for reading
 it. Machine buyers can pay per request for the raw feed over HTTP 402.
 
 ## Correct the record before you write chain code
@@ -19,7 +19,7 @@ These four errors appear in almost every secondhand description of GIWA, includi
 project's own original blueprint. The corrected values are in `lib/giwa.ts`.
 
 1. Chain ID is **91342**, not 919.
-2. Identity is **`username.up.id`** (Upbit Web3 Names — ENS subdomains issued as Soul-Bound
+2. Identity is **`username.up.id`** (Upbit Web3 Names - ENS subdomains issued as Soul-Bound
    Tokens, one per verified wallet). There is **no `*.giwa.id` namespace**.
 3. There is **no first-party "GIWA Paymaster"**. ERC-4337 EntryPoint v0.6 and v0.7 are
    predeployed at genesis; gasless UX means running your own paymaster against them.
@@ -41,7 +41,7 @@ Full network table, predeploy addresses and L1 bridge contracts: `CLAUDE.md` and
 | Every shared type (import, never redefine) | `lib/types.ts` |
 | `cn()`, wei→ETH/USD/KRW formatting, `relativeTime`, `seededRandom` | `lib/utils.ts` |
 | Design tokens and utility classes | `app/globals.css` |
-| Contract ABIs (generated — run `npm run abi`) | `lib/abi.ts` |
+| Contract ABIs (generated - run `npm run abi`) | `lib/abi.ts` |
 | x402 challenge + payment verification | `lib/x402.ts` |
 | Editorial dataset | `lib/data/issues.ts`, `lib/data/protocol.ts` |
 | Protocol contracts | `contracts/` |
@@ -69,17 +69,17 @@ numbers, subtle hover lifts, no emoji.
 
 `SyndixTreasury` guarantees three properties, each with a regression test:
 
-- **Solvency** — reader-owed ETH sits in `reservedRewards` and the owner cannot touch it;
+- **Solvency** - reader-owed ETH sits in `reservedRewards` and the owner cannot touch it;
   `withdrawTreasury` spends only `unreservedBalance()`. Fuzzed over 256 runs.
-- **Sybil resistance** — claims require a verified identity through `IReaderRegistry`
+- **Sybil resistance** - claims require a verified identity through `IReaderRegistry`
   (the `up.id` SBT resolver in production, `MockUpIdRegistry` on testnet).
-- **Proof of read** — claims carry an EIP-712 `ReadProof` signed by the attester, and the
+- **Proof of read** - claims carry an EIP-712 `ReadProof` signed by the attester, and the
   reader submits their own transaction, so the attester never holds funds.
 
 Two of these are regressions against the original blueprint contract, which would fail
 them. If you change the treasury, run `npm run contracts:test` before anything else.
 
-ETH transfers use `.call{value:}`, never `.transfer` — recipients may be Safes or 4337
+ETH transfers use `.call{value:}`, never `.transfer` - recipients may be Safes or 4337
 smart accounts.
 
 ## Honesty rule

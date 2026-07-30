@@ -30,7 +30,7 @@ export const dynamic = "force-dynamic";
  *   - simulated no key: the scripted pipeline in lib/data/protocol replays so
  *               the studio still demos end to end.
  *
- * The ecosystem scan is real in both modes — it reads live head state from
+ * The ecosystem scan is real in both modes - it reads live head state from
  * GIWA Sepolia over the Flashblocks RPC. That part is not a simulation, so the
  * block numbers in the log are ones a reviewer can look up on the explorer.
  */
@@ -51,7 +51,7 @@ function makeLine(
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-/** Live head state from GIWA Sepolia. Never throws — the run degrades instead. */
+/** Live head state from GIWA Sepolia. Never throws - the run degrades instead. */
 async function scanChain(): Promise<{
   blockNumber: bigint | null;
   gasPriceWei: bigint | null;
@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     track = resolveTrack((body as { track?: unknown })?.track);
   } catch {
-    // Empty or malformed body is fine — fall back to the default track.
+    // Empty or malformed body is fine - fall back to the default track.
   }
 
   const hasKey = hasOpenAIKey();
@@ -274,7 +274,7 @@ export async function POST(request: NextRequest) {
               Date.now() - startedAt,
               "scanning",
               "warn",
-              "Live RPC unreachable — continuing from cached signals",
+              "Live RPC unreachable - continuing from cached signals",
               chain.error?.slice(0, 120),
             ),
           });
@@ -335,7 +335,7 @@ export async function POST(request: NextRequest) {
                   Date.now() - startedAt,
                   "pinning",
                   "warn",
-                  "Not pinned — publishing is disabled for this draft",
+                  "Not pinned - publishing is disabled for this draft",
                   pin.reason.slice(0, 140),
                 ),
           });
@@ -349,7 +349,7 @@ export async function POST(request: NextRequest) {
               executiveSummary: generated.executiveSummary,
               track,
             },
-            // The studio needs these to publish on-chain; a draft with no
+            // The studio needs these to publish onchain; a draft with no
             // contentURI must not be publishable.
             contentURI: pin.ok ? pin.uri : null,
             gatewayUrl: pin.ok ? ipfsGatewayUrl(pin.uri) : null,
@@ -364,7 +364,7 @@ export async function POST(request: NextRequest) {
               Date.now() - startedAt,
               "synthesizing",
               "warn",
-              "OPENAI_API_KEY not set — replaying the recorded pipeline",
+              "OPENAI_API_KEY not set - replaying the recorded pipeline",
               "simulated",
             ),
           });

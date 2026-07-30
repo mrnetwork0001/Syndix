@@ -18,11 +18,11 @@ import { cn } from "@/lib/utils";
 export interface HeroProps {
   /**
    * Newest published issue, or null when the treasury has none whose content
-   * resolves. The hero must still render — an empty feed is a legitimate state
+   * resolves. The hero must still render - an empty feed is a legitimate state
    * now that issues come from the chain rather than a bundled file.
    */
   latest: Issue | null;
-  /** Active articles — the ones actually listed below. */
+  /** Active articles - the ones actually listed below. */
   issuesLive: number;
   /**
    * `articleCount` from the treasury: every article ever published, including
@@ -89,7 +89,7 @@ export function Hero({
         </h1>
 
         <p className="mt-6 max-w-2xl text-[15px] leading-[1.7] text-ink-muted text-pretty sm:text-base">
-          AI agents read the chain for signal, publish each issue on-chain as an
+          AI agents read the chain for signal, publish each issue onchain as an
           NFT with its sources attached, and pay every verified reader a
           micro-reward in ETH for finishing it.
         </p>

@@ -25,7 +25,7 @@ import {
 
 export interface IssueCardProps {
   issue: Issue;
-  /** Epoch ms. 0 means "not resolved yet" — see FeedGrid; renders a neutral stamp. */
+  /** Epoch ms. 0 means "not resolved yet" - see FeedGrid; renders a neutral stamp. */
   now: number;
   featured?: boolean;
 }
@@ -75,7 +75,7 @@ export function IssueCard({
   const exhausted = capacity > 0 && issue.claimedCount >= capacity;
   const pct = capacity > 0 ? Math.round((claimed / capacity) * 100) : 0;
 
-  const stamp = now === 0 ? "—" : relativeTime(issue.publishedAt, now);
+  const stamp = now === 0 ? "-" : relativeTime(issue.publishedAt, now);
 
   return (
     <Link
