@@ -288,7 +288,17 @@ export function ClaimModal({
   const [stage, setStage] = useState<Stage>("idle");
   const [txHash, setTxHash] = useState<string | null>(null);
   const [claimError, setClaimError] = useState<string | null>(null);
-  const [onchainName, setOnchainName] = useState<string | null>(null);
+  /**
+   * On-chain identity state. `verified` is the gate — it mirrors what the
+   * treasury itself checks. `name` is a display label that may legitimately be
+   * null for a verified reader, because the real up.id registry keeps labels
+   * off-chain, so gating on it would lock out exactly the readers who hold a
+   * genuine name.
+   */
+  const [identity, setIdentity] = useState<{
+    verified: boolean;
+    name: string | null;
+  }>({ verified: false, name: null });
   /** Real settlement facts. Null while simulating, so the UI can tell them apart. */
   const [settled, setSettled] = useState<{
     preconfirmMs: number;
@@ -299,7 +309,7 @@ export function ClaimModal({
   const normalized = normalizeUpId(nameInput);
   const nameValid = isValidUpId(normalized);
   const identityReady = IS_LIVE_CHAIN
-    ? Boolean(address) && Boolean(onchainName)
+    ? Boolean(address) && identity.verified
     : Boolean(address) && nameValid;
   const dwellReady = dwellSeconds >= MIN_DWELL_SECONDS;
   const running = stage !== "idle" && stage !== "sealed";
@@ -604,7 +614,7 @@ export function ClaimModal({
                 )}
 
                 {IS_LIVE_CHAIN ? (
-                  <UpIdClaim onVerified={setOnchainName} />
+                  <UpIdClaim onVerified={setIdentity} />
                 ) : (
                 <div>
                   <label
