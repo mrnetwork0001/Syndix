@@ -42,7 +42,7 @@ export interface UpIdIdentity {
  *
  * The label has two possible sources because `IReaderRegistry.nameOf` is not
  * guaranteed to answer. The live UpnameRegistry keeps no label onchain -
- * tokenId is an ENS namehash and the contract is not enumerable - so the
+ * tokenId is keccak256 of the label and the contract is not enumerable - so the
  * adapter returns an empty string and the label comes from token metadata via
  * `/api/up-id/:address`. A registry that does store one answers from `nameOf`
  * directly, so both are read and the first non-empty wins.

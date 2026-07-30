@@ -5,10 +5,10 @@ import { UPNAME_REGISTRY, UP_ID_METADATA_BASE, GIWA_EXPLORER } from "@/lib/giwa"
  *
  * WHY THIS IS NOT A CONTRACT CALL
  *
- * The live registry is an ERC-721 whose tokenId is the ENS namehash of the
- * name. It is not ERC-721Enumerable - `tokenOfOwnerByIndex` reverts and
+ * The live registry is an ERC-721 whose tokenId is keccak256 of the label
+ * alone - the ENS labelhash, not the namehash of the full name. It is not ERC-721Enumerable - `tokenOfOwnerByIndex` reverts and
  * `supportsInterface(0x780e9d63)` returns false - so there is no view function
- * that maps an address to the token it holds, and a namehash cannot be
+ * that maps an address to the token it holds, and a keccak hash cannot be
  * inverted. The label genuinely lives off-chain, behind `tokenURI`.
  *
  * So the onchain half of identity and the display half are separate concerns,

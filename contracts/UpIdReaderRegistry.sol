@@ -23,7 +23,8 @@ interface IUpnameRegistry {
  *
  *      WHY `nameOf` RETURNS EMPTY
  *
- *      The registry is an ERC-721 whose tokenId is the namehash. It is not
+ *      The registry is an ERC-721 whose tokenId is keccak256 of the label
+ *      alone - the ENS labelhash, not the namehash. It is not
  *      ERC-721Enumerable — `tokenOfOwnerByIndex` reverts and
  *      `supportsInterface(0x780e9d63)` is false — so there is no on-chain path
  *      from an address to the tokenId it holds. The human-readable label lives
@@ -31,7 +32,7 @@ interface IUpnameRegistry {
  *
  *      So this adapter answers the question the treasury actually needs —
  *      "does this address hold a verified GIWA identity?" — and returns an empty
- *      string for the label rather than inventing one or guessing a namehash
+ *      string for the label rather than inventing one or guessing a keccak
  *      preimage. The UI resolves the display name from token metadata, where it
  *      genuinely lives. `SyndixTreasury` already tolerates an empty identity: it
  *      only writes `readerIdentity` when the string is non-empty.

@@ -184,8 +184,8 @@ plainly: **our own deployer wallet cannot claim a reader reward**, because it ho
 genuine `up.id`. A protocol that can issue itself the credential it checks has not
 implemented a sybil gate.
 
-The label is a separate problem with a separate answer. tokenId is the ENS namehash, which
-cannot be inverted, and the registry is not `ERC721Enumerable` (`tokenOfOwnerByIndex`
+The label is a separate problem with a separate answer. tokenId is `keccak256(label)` - the ENS
+labelhash, not the namehash - which cannot be inverted, and the registry is not `ERC721Enumerable` (`tokenOfOwnerByIndex`
 reverts, `supportsInterface(0x780e9d63)` is false), so no view function maps an address to
 the name it holds. `nameOf` returns an empty string rather than a guess, and the UI
 resolves the display name from token metadata via `/api/up-id/:address`, matching on the
