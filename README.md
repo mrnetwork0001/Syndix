@@ -26,7 +26,7 @@ This is not a generic dApp with a chain swapped in. Four GIWA properties are loa
 Correcting four things that circulate widely about GIWA, and that this project's own first
 draft had wrong: the chain ID is **91342**, identity is **`up.id`** and not `giwa.id`,
 there is **no first-party "GIWA Paymaster" product** (you run your own against the
-predeployed EntryPoint), and **mainnet is not live yet**. `CLAUDE.md` holds the full
+predeployed EntryPoint), and **mainnet is not live yet**. `docs/ENGINEERING.md` holds the full
 verified table.
 
 ---

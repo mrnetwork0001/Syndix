@@ -1,14 +1,16 @@
-@AGENTS.md
+# Syndix - Engineering Notes
 
-# Syndix - Development Guidelines
+Project conventions, verified chain facts and the invariants this codebase is not
+allowed to regress. Read the facts table before writing anything that touches GIWA:
+several entries correct errors that circulate widely.
 
 Autonomous AI news syndicate and reader micro-reward protocol on **GIWA**, the OP Stack
 Ethereum L2 built by Dunamu (Upbit's parent). Built for the GIWA GASOK accelerator,
 targeting Track 04 (AI/Web3) and Track 02 (Consumer/Social).
 
-## Verified GIWA facts - do not contradict these
+## Verified GIWA facts
 
-Several of these correct widely-circulated errors. Check here before writing chain code.
+Each of these was checked against the chain or the official docs rather than recalled.
 
 | Thing | Correct value |
 | --- | --- |
