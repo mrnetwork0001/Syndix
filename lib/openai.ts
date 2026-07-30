@@ -26,7 +26,7 @@ export function openaiClient(): OpenAI {
  * Structured Outputs schema for a generated issue.
  *
  * `strict: true` requires every property to be listed in `required` and
- * `additionalProperties: false` on every object — OpenAI rejects the request
+ * `additionalProperties: false` on every object - OpenAI rejects the request
  * otherwise, so do not "tidy" this by making fields optional.
  */
 export const ISSUE_JSON_SCHEMA = {
@@ -64,7 +64,7 @@ export const ISSUE_JSON_SCHEMA = {
       body: {
         type: "string",
         description:
-          "The issue as GitHub-flavoured Markdown, 600-900 words, with h2/h3 headings, at least one list, and a table or fenced code block where it earns its place. No h1 — the title renders separately.",
+          "The issue as GitHub-flavoured Markdown, 600-900 words, with h2/h3 headings, at least one list, and a table or fenced code block where it earns its place. No h1 - the title renders separately.",
       },
     },
     required: [
@@ -98,4 +98,8 @@ GIWA is an OP Stack Ethereum L2 built by Dunamu, the parent company of the Upbit
 - Dojang is GIWA's attestation service built on EAS, predeployed at 0x4200000000000000000000000000000000000021.
 - ERC-4337 EntryPoint v0.6 and v0.7 are predeployed at genesis, along with Multicall3, Permit2, Safe and WETH9. There is no first-party "GIWA Paymaster" product; gasless UX means running your own paymaster against the standard EntryPoint.
 
-Write like a sharp research newsletter: concrete, technically specific, no hype and no filler. Never invent TVL figures, partnerships, token prices, or launch dates. If a number is not in the signals you were given, either omit it or mark it explicitly as an estimate.`;
+Write like a sharp research newsletter: concrete, technically specific, no hype and no filler. Never invent TVL figures, partnerships, token prices, or launch dates. If a number is not in the signals you were given, either omit it or mark it explicitly as an estimate.
+
+House style, applied to every field you emit:
+- Use a plain hyphen "-" for parenthetical dashes. Never use an em dash.
+- Write "onchain", never "on-chain".`;
