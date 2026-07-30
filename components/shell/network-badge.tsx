@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore, type ReactElement } from "react";
 import { TriangleAlert } from "lucide-react";
-import { useChainId, useSwitchChain } from "wagmi";
+import { useGiwaNetwork } from "@/lib/use-giwa-network";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GIWA_SEPOLIA_ID } from "@/lib/giwa";
 
@@ -11,8 +11,8 @@ const alwaysTrue = () => true;
 const alwaysFalse = () => false;
 
 export function NetworkBadge(): ReactElement {
-  const chainId = useChainId();
-  const { mutate: switchChain, isPending } = useSwitchChain();
+  const { chainId, onWrongNetwork, pending, switchToGiwa } =
+    useGiwaNetwork();
   /** false during SSR and the hydrating render, true from the commit onward. */
   const mounted = useSyncExternalStore(noopSubscribe, alwaysTrue, alwaysFalse);
 
@@ -20,16 +20,16 @@ export function NetworkBadge(): ReactElement {
     return <Skeleton className="hidden h-8 w-[128px] rounded-full sm:block" />;
   }
 
-  if (chainId !== GIWA_SEPOLIA_ID) {
+  if (onWrongNetwork) {
     return (
       <button
         type="button"
-        onClick={() => switchChain({ chainId: GIWA_SEPOLIA_ID })}
-        disabled={isPending}
+        onClick={() => void switchToGiwa()}
+        disabled={pending}
         className="hidden h-8 shrink-0 items-center gap-1.5 rounded-full bg-caution/[0.13] px-2.5 text-[11.5px] font-medium text-caution transition-colors duration-200 hover:bg-caution/20 disabled:opacity-50 sm:inline-flex"
       >
         <TriangleAlert className="size-3.5" strokeWidth={2.1} />
-        {isPending ? "Switching…" : "Wrong network — Switch"}
+        {pending ? "Switching…" : `Wrong network (${chainId})`}
       </button>
     );
   }

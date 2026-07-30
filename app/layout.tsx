@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/shell/header";
+import { NetworkGuard } from "@/components/shell/network-guard";
 import { Footer } from "@/components/shell/footer";
 
 const geistSans = Geist({
@@ -81,6 +82,7 @@ export default function RootLayout({
             Skip to content
           </a>
           <Header />
+          <NetworkGuard />
           <main
             id="content"
             className="mx-auto w-full max-w-[1200px] flex-1 px-4 pb-24 sm:px-6"

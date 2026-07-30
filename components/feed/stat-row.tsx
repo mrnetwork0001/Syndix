@@ -4,6 +4,7 @@ import type { ProtocolStats } from "@/lib/types";
 import type { LiveProtocolStats } from "@/lib/chain-stats";
 import { StatTile } from "@/components/ui/stat-tile";
 import { Badge } from "@/components/ui/badge";
+import { LiveBlock } from "@/components/shell/live-block";
 import { IS_LIVE_CHAIN } from "@/lib/giwa";
 import { compact, formatEth, formatInt, formatKrw, formatUsd } from "@/lib/utils";
 
@@ -38,13 +39,17 @@ export function StatRow({ stats, live, className }: StatRowProps): ReactElement 
         >
           Protocol
         </h2>
-        <Badge tone={live ? "positive" : IS_LIVE_CHAIN ? "caution" : "caution"}>
-          {live
-            ? `Live · read at block ${live.blockNumber.toString()}`
-            : IS_LIVE_CHAIN
+        {live ? (
+          <Badge tone="positive">
+            <LiveBlock initialBlock={live.blockNumber.toString()} />
+          </Badge>
+        ) : (
+          <Badge tone="caution">
+            {IS_LIVE_CHAIN
               ? "Chain unreachable · showing dataset"
               : "Simulated ledger"}
-        </Badge>
+          </Badge>
+        )}
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">

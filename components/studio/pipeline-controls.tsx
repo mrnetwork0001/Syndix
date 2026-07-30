@@ -28,6 +28,16 @@ import { Panel, PanelHeader } from "@/components/ui/panel";
 import { cn } from "@/lib/utils";
 import { AgentConsole } from "@/components/studio/agent-console";
 import { DraftPreview, type DraftIssue } from "@/components/studio/draft-preview";
+import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import { createPublicClient } from "viem";
+import { syndixTreasuryAbi } from "@/lib/abi";
+import { flashblocksTransport } from "@/lib/wagmi";
+import {
+  IS_LIVE_CHAIN,
+  SYNDIX_CONTRACTS,
+  explorerTx,
+  giwaSepolia,
+} from "@/lib/giwa";
 
 /**
  * Everything the studio needs to know about the archive. Deliberately not the
@@ -41,13 +51,26 @@ export interface ArchiveSummary {
   nextIssueId: number;
 }
 
+/** 0.00003 ETH per reader, matching the existing on-chain issues. */
+const REWARD_PER_READER_WEI = "30000000000000";
+/** How many claims a freshly published issue is funded for. */
+const CLAIMS_FUNDED = 20;
+
 type ActionId = "scan" | "draft" | "cover" | "publish";
 
 type RunMode = "live" | "simulated" | "scripted";
 
 type RunEvent =
   | { type: "log"; line: AgentLogLine }
-  | { type: "draft"; draft: DraftIssue }
+  | {
+      type: "draft";
+      draft: DraftIssue;
+      contentURI?: string | null;
+      gatewayUrl?: string | null;
+      subjectLine?: string;
+      engagementIndex?: number;
+      sentiment?: string;
+    }
   | { type: "done"; runId: string; mode: "live" | "simulated"; latencyMs: number }
   | { type: "error"; message: string };
 
@@ -148,6 +171,25 @@ export function PipelineControls({
   const [log, setLog] = useState<AgentLogLine[]>([]);
   const [stage, setStage] = useState<AgentStage>("idle");
   const [draft, setDraft] = useState<DraftIssue | null>(null);
+  const [contentURI, setContentURI] = useState<string | null>(null);
+  const [publishTx, setPublishTx] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
+
+  const { address } = useAccount();
+  const { writeContractAsync } = useWriteContract();
+  const { data: owner } = useReadContract({
+    address: SYNDIX_CONTRACTS.treasury,
+    abi: syndixTreasuryAbi,
+    functionName: "owner",
+    query: { enabled: IS_LIVE_CHAIN },
+  });
+  const { refetch: refetchCount } = useReadContract({
+    address: SYNDIX_CONTRACTS.treasury,
+    abi: syndixTreasuryAbi,
+    functionName: "articleCount",
+    query: { enabled: IS_LIVE_CHAIN },
+  });
   const [active, setActive] = useState<ActionId | null>(null);
   const [mode, setMode] = useState<RunMode | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -268,6 +310,7 @@ export function PipelineControls({
             break;
           case "draft":
             setDraft(event.draft);
+            setContentURI(event.contentURI ?? null);
             break;
           case "done":
             setMode(event.mode);
@@ -305,22 +348,81 @@ export function PipelineControls({
     }
   }, [beginRun, endRun, push, track]);
 
+
+  /**
+   * Publishes the generated draft on-chain for real.
+   *
+   * Requires the connected wallet to be the treasury owner, since
+   * publishArticle is onlyOwner, and requires a pinned contentURI — publishing
+   * a pointer to nothing is exactly the kind of decorative on-chain write this
+   * project is trying not to ship.
+   */
+  const runPublish = useCallback(async () => {
+    if (!draft || !contentURI) return;
+    setPublishError(null);
+    setPublishTx(null);
+    setPublishing(true);
+    try {
+      if (!address) throw new Error("Connect the publisher wallet first.");
+      if (owner && address.toLowerCase() !== owner.toLowerCase()) {
+        throw new Error(
+          `Only the treasury owner can publish. Connected as ${address.slice(0, 10)}…, owner is ${owner.slice(0, 10)}….`,
+        );
+      }
+
+      const pool = BigInt(REWARD_PER_READER_WEI) * BigInt(CLAIMS_FUNDED);
+
+      const hash = await writeContractAsync({
+        address: SYNDIX_CONTRACTS.treasury,
+        abi: syndixTreasuryAbi,
+        functionName: "publishArticle",
+        args: [draft.title, contentURI, BigInt(REWARD_PER_READER_WEI)],
+        value: pool,
+      });
+      setPublishTx(hash);
+
+      const client = createPublicClient({
+        chain: giwaSepolia,
+        transport: flashblocksTransport,
+      });
+      const receipt = await client.waitForTransactionReceipt({
+        hash,
+        pollingInterval: 100,
+        confirmations: 0,
+      });
+      if (receipt.status !== "success") {
+        throw new Error("publishArticle reverted on GIWA.");
+      }
+      await refetchCount();
+    } catch (caught) {
+      setPublishError(
+        caught instanceof Error ? caught.message.split("\n")[0] : String(caught),
+      );
+    } finally {
+      setPublishing(false);
+    }
+  }, [draft, contentURI, address, owner, writeContractAsync, refetchCount]);
+
   const onAction = useCallback(
     (spec: ActionSpec) => {
       if (spec.id === "draft") {
         void runDraft();
         return;
       }
+      if (spec.id === "publish") {
+        void runPublish();
+        return;
+      }
       void runScripted(spec);
     },
-    [runDraft, runScripted],
+    [runDraft, runPublish, runScripted],
   );
 
   const modeBadge = useMemo(() => {
     if (mode === "live") {
       return (
         <Badge tone="positive" dot>
-          Live — claude-opus-5
+          Live — OpenAI
         </Badge>
       );
     }
@@ -392,8 +494,13 @@ export function PipelineControls({
                 variant={spec.primary ? "primary" : "secondary"}
                 icon={spec.icon}
                 full
-                loading={active === spec.id}
-                disabled={running && active !== spec.id}
+                loading={active === spec.id || (spec.id === "publish" && publishing)}
+                disabled={
+                  (running && active !== spec.id) ||
+                  // Publishing needs a pinned draft and a live treasury.
+                  (spec.id === "publish" &&
+                    (publishing || !draft || !contentURI || !IS_LIVE_CHAIN))
+                }
                 onClick={() => onAction(spec)}
               >
                 {spec.label}
@@ -409,11 +516,12 @@ export function PipelineControls({
           <p className="flex min-w-0 items-start gap-2 text-[11px] leading-relaxed text-ink-faint">
             <Info className="mt-px size-3.5 shrink-0" strokeWidth={1.9} />
             <span>
-              Only <span className="text-ink-muted">Generate draft issue</span>{" "}
-              hits the pipeline route. The other three replay the recorded trace
-              in{" "}
-              <span className="font-mono">lib/data/protocol.ts</span> so the
-              studio demos without an API key.
+              <span className="text-ink-muted">Generate draft issue</span> and{" "}
+              <span className="text-ink-muted">Mint &amp; publish</span> are
+              real: one calls the pipeline route, the other sends
+              publishArticle from your wallet. Scan and cover art replay the
+              recorded trace in{" "}
+              <span className="font-mono">lib/data/protocol.ts</span>.
             </span>
           </p>
           {running ? (
@@ -426,10 +534,49 @@ export function PipelineControls({
         <div className="border-t border-hairline px-5 py-3.5">
           <p className="text-[11px] leading-relaxed text-ink-faint">
             {mode === "live"
-              ? "ANTHROPIC_API_KEY is set — this issue was written by claude-opus-5 against live GIWA Sepolia head state."
-              : "Set ANTHROPIC_API_KEY in .env.local to switch the studio from the recorded trace to real generation with claude-opus-5. The chain scan reads live head state either way."}
+              ? "OPENAI_API_KEY is set — this issue was written by OpenAI against live GIWA Sepolia head state, and pinned to IPFS if PINATA_JWT is set."
+              : "Set OPENAI_API_KEY in .env.local to switch the studio from the recorded trace to real generation. The chain scan reads live head state either way."}
           </p>
         </div>
+
+        {(publishing || publishTx || publishError || (draft && !contentURI)) ? (
+          <div className="mx-5 mb-5 space-y-2">
+            {draft && !contentURI && !publishTx ? (
+              <p className="flex items-start gap-2 rounded-card border border-caution/30 bg-caution/[0.09] px-3.5 py-2.5 text-[11.5px] leading-relaxed text-caution">
+                <TriangleAlert className="mt-px size-3.5 shrink-0" strokeWidth={2} />
+                <span>
+                  This draft has no pinned contentURI, so publishing is
+                  disabled — an on-chain pointer to nothing is worse than no
+                  pointer. Set PINATA_JWT and regenerate.
+                </span>
+              </p>
+            ) : null}
+            {publishing ? (
+              <p className="text-[11.5px] text-ink-muted">
+                Waiting for the publish transaction…
+              </p>
+            ) : null}
+            {publishTx ? (
+              <p className="flex flex-wrap items-center gap-2 rounded-card border border-positive/30 bg-positive/[0.09] px-3.5 py-2.5 text-[11.5px] text-positive">
+                Published on GIWA Sepolia
+                <a
+                  href={explorerTx(publishTx)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-mono underline decoration-positive/40"
+                >
+                  {publishTx.slice(0, 14)}…
+                </a>
+              </p>
+            ) : null}
+            {publishError ? (
+              <p className="flex items-start gap-2 rounded-card border border-critical/30 bg-critical/[0.1] px-3.5 py-2.5 text-[11.5px] leading-relaxed text-critical">
+                <TriangleAlert className="mt-px size-3.5 shrink-0" strokeWidth={2} />
+                {publishError}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         {error ? (
           <div className="mx-5 mb-5 flex items-start gap-2 rounded-card border border-critical/30 bg-critical/[0.1] px-3.5 py-2.5">

@@ -43,7 +43,6 @@ import { onchainArticleId } from "@/lib/onchain";
 import { UpIdClaim } from "@/components/reader/up-id-claim";
 import { flashblocksTransport } from "@/lib/wagmi";
 import {
-  GIWA_PREDEPLOYS,
   GIWA_SEPOLIA_ID,
   IS_LIVE_CHAIN,
   SYNDIX_CONTRACTS,
@@ -683,13 +682,13 @@ export function ClaimModal({
                 a viable product here and is not one on Ethereum L1.
               </p>
               <p className="mt-2.5 text-[11.5px] leading-relaxed text-ink-faint">
-                A future version can remove the gas step entirely by routing the
-                claim through the ERC-4337 EntryPoint v0.7 predeployed at{" "}
-                <Mono className="text-[11px]">
-                  {GIWA_PREDEPLOYS.entryPointV07}
-                </Mono>{" "}
-                with a Syndix paymaster. That paymaster is not built yet, so this
-                step is deliberately described as it actually behaves.
+                SyndixPaymaster is deployed, staked and funded at{" "}
+                <Mono className="text-[11px]">{SYNDIX_CONTRACTS.paymaster}</Mono>{" "}
+                against the EntryPoint v0.7 predeploy, and will sponsor exactly
+                this call. It is not in the path yet: relaying a UserOperation
+                also needs a smart-account factory on GIWA and a bundler serving
+                chain {GIWA_SEPOLIA_ID}, neither of which exists today. Until
+                then you submit directly, and this step says so.
               </p>
             </Step>
 

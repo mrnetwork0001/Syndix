@@ -82,7 +82,17 @@ function envAddress(value: string | undefined): `0x${string}` {
 export const SYNDIX_CONTRACTS = {
   treasury: envAddress(process.env.NEXT_PUBLIC_SYNDIX_TREASURY),
   articleNft: envAddress(process.env.NEXT_PUBLIC_SYNDIX_ARTICLE_NFT),
+  paymaster: envAddress(process.env.NEXT_PUBLIC_SYNDIX_PAYMASTER),
 } as const;
+
+/**
+ * Gasless claims additionally need a bundler that serves chain 91342 and a
+ * smart-account factory. The paymaster being deployed is not sufficient — see
+ * the note in components/reader/claim-modal.tsx.
+ */
+export const BUNDLER_URL = process.env.NEXT_PUBLIC_BUNDLER_URL?.trim() || "";
+export const IS_GASLESS_READY =
+  BUNDLER_URL !== "" && envAddress(process.env.NEXT_PUBLIC_SYNDIX_PAYMASTER) !== ZERO_ADDRESS;
 
 export const IS_LIVE_CHAIN = SYNDIX_CONTRACTS.treasury !== ZERO_ADDRESS;
 

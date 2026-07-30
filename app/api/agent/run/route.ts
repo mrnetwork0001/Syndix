@@ -1,10 +1,22 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest } from "next/server";
 import { createPublicClient, http } from "viem";
 import { GIWA_RPC_FLASHBLOCKS, GIWA_SEPOLIA_ID, giwaSepolia } from "@/lib/giwa";
 import { AGENT_RUN_SCRIPT } from "@/lib/data/protocol";
+import {
+  ISSUE_JSON_SCHEMA,
+  SYSTEM_PROMPT,
+  hasOpenAIKey,
+  openaiClient,
+  openaiModel,
+  type GeneratedIssue,
+} from "@/lib/openai";
+import {
+  hasPinataKey,
+  ipfsGatewayUrl,
+  pinIssueMetadata,
+} from "@/lib/ipfs";
 import { ISSUES, TRACKS } from "@/lib/data/issues";
-import type { AgentLogLine, AgentStage, Issue, TrackId } from "@/lib/types";
+import type { AgentLogLine, AgentStage, TrackId } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,8 +25,8 @@ export const dynamic = "force-dynamic";
  * The Syndix ingestion agent.
  *
  * Two modes, and the response always says which one ran:
- *   - live      ANTHROPIC_API_KEY is set: the issue is genuinely written by
- *               claude-opus-5 from signals gathered this request.
+ *   - live      OPENAI_API_KEY is set: the issue is genuinely written by
+ *               the configured OpenAI model from the signals gathered this request.
  *   - simulated no key: the scripted pipeline in lib/data/protocol replays so
  *               the studio still demos end to end.
  *
@@ -22,8 +34,6 @@ export const dynamic = "force-dynamic";
  * GIWA Sepolia over the Flashblocks RPC. That part is not a simulation, so the
  * block numbers in the log are ones a reviewer can look up on the explorer.
  */
-
-const MODEL = "claude-opus-5";
 
 type Emit = (event: Record<string, unknown>) => void;
 
@@ -73,72 +83,23 @@ function resolveTrack(input: unknown): TrackId {
     : "giwa-l2";
 }
 
-const DRAFT_SCHEMA = {
-  type: "object",
-  properties: {
-    title: {
-      type: "string",
-      description: "Headline, under 80 characters, specific and non-clickbait.",
-    },
-    standfirst: {
-      type: "string",
-      description: "One-sentence deck under the headline.",
-    },
-    executiveSummary: {
-      type: "array",
-      items: { type: "string" },
-      description: "Three or four single-line takeaways.",
-    },
-    body: {
-      type: "string",
-      description:
-        "The full issue as GitHub-flavoured Markdown, 600-900 words, using h2/h3 headings, at least one list, and a code block or table where it earns its place. No h1 - the title is rendered separately.",
-    },
-    subjectLine: {
-      type: "string",
-      description: "Email subject line optimised for open rate.",
-    },
-    sentiment: { type: "string", enum: ["bullish", "neutral", "cautious"] },
-  },
-  required: [
-    "title",
-    "standfirst",
-    "executiveSummary",
-    "body",
-    "subjectLine",
-    "sentiment",
-  ],
-  additionalProperties: false,
-} as const;
-
-const SYSTEM_PROMPT = `You are the Syndix ingestion agent, an autonomous journalist covering the GIWA ecosystem.
-
-GIWA is an OP Stack Ethereum L2 built by Dunamu, the parent company of the Upbit exchange. Facts you must not contradict:
-- Testnet is GIWA Sepolia, chain ID 91342, settling to Ethereum Sepolia. Mainnet is still under development.
-- Blocks are ~1 second. Flashblocks serve preconfirmations in up to 200ms via a separate RPC, readable under the "pending" block tag.
-- Identity is Upbit Web3 Names: username.up.id, ENS subdomains issued as Soul-Bound Tokens to Dojang-verified addresses, one per wallet. It is NOT "giwa.id".
-- Dojang is GIWA's attestation service built on EAS, predeployed at 0x4200000000000000000000000000000000000021.
-- ERC-4337 EntryPoint v0.6 and v0.7 are predeployed at genesis, along with Multicall3, Permit2, Safe and WETH9. There is no first-party "GIWA Paymaster" product; gasless UX is built on the standard EntryPoint with your own paymaster.
-
-Write like a sharp research newsletter: concrete, technically specific, no hype and no filler. Never invent TVL figures, partnerships, token prices, or launch dates. If a number is not in the signals you were given, either omit it or mark it explicitly as an estimate.`;
-
 async function runLive(
   emit: Emit,
   track: TrackId,
   startedAt: number,
   chain: Awaited<ReturnType<typeof scanChain>>,
-): Promise<void> {
-  const client = new Anthropic();
+): Promise<GeneratedIssue> {
+  const client = openaiClient();
+  const model = openaiModel();
   const trackLabel = TRACKS.find((t) => t.id === track)?.label ?? track;
-  const since = Date.now() - startedAt;
 
   emit({
     type: "log",
     line: makeLine(
-      since,
+      Date.now() - startedAt,
       "synthesizing",
       "info",
-      `Dispatching synthesis to ${MODEL}`,
+      `Dispatching synthesis to ${model}`,
       trackLabel,
     ),
   });
@@ -153,14 +114,13 @@ async function runLive(
     ? `Live GIWA Sepolia head: block ${chain.blockNumber}, gas price ${chain.gasPriceWei ?? "unknown"} wei.`
     : "Live head state was unavailable this run; do not cite a block height.";
 
-  const stream = client.messages.stream({
-    model: MODEL,
-    max_tokens: 32_000,
-    system: SYSTEM_PROMPT,
-    output_config: {
-      format: { type: "json_schema", schema: DRAFT_SCHEMA },
-    },
+  const stream = await client.chat.completions.create({
+    model,
+    stream: true,
+    stream_options: { include_usage: true },
+    response_format: { type: "json_schema", json_schema: ISSUE_JSON_SCHEMA },
     messages: [
+      { role: "system", content: SYSTEM_PROMPT },
       {
         role: "user",
         content: `Write today's Syndix issue for the "${trackLabel}" track.
@@ -170,52 +130,47 @@ ${headline}
 Signals gathered this run:
 ${signalDigest}
 
-Produce the issue as JSON matching the required schema.`,
+Return JSON matching the required schema.`,
       },
     ],
   });
 
-  let ticks = 0;
-  stream.on("text", () => {
-    ticks += 1;
-    // Throttle progress lines so the console stays readable on a long generation.
-    if (ticks % 220 === 0) {
-      emit({
-        type: "log",
-        line: makeLine(
-          Date.now() - startedAt,
-          "synthesizing",
-          "info",
-          "Streaming draft…",
-          `${ticks} deltas`,
-        ),
-      });
+  let text = "";
+  let chunks = 0;
+  let usage = "";
+  for await (const part of stream) {
+    const delta = part.choices[0]?.delta?.content;
+    if (delta) {
+      text += delta;
+      chunks += 1;
+      // Throttle: one line per ~40 deltas keeps the console readable.
+      if (chunks % 40 === 0) {
+        emit({
+          type: "log",
+          line: makeLine(
+            Date.now() - startedAt,
+            "synthesizing",
+            "info",
+            "Streaming draft...",
+            `${text.length} chars`,
+          ),
+        });
+      }
     }
-  });
-
-  const message = await stream.finalMessage();
-
-  if (message.stop_reason === "refusal") {
-    throw new Error(
-      "Model declined the request (stop_reason: refusal). Try a different track.",
-    );
+    if (part.usage) {
+      usage = `${part.usage.prompt_tokens} in / ${part.usage.completion_tokens} out`;
+    }
+    const finish = part.choices[0]?.finish_reason;
+    if (finish && finish !== "stop") {
+      throw new Error(
+        `Generation stopped early (finish_reason: ${finish}). Try again or raise the token limit.`,
+      );
+    }
   }
 
-  const text = message.content
-    .filter((block): block is Anthropic.TextBlock => block.type === "text")
-    .map((block) => block.text)
-    .join("");
-
-  let parsed: {
-    title: string;
-    standfirst: string;
-    executiveSummary: string[];
-    body: string;
-    subjectLine: string;
-    sentiment: string;
-  };
+  let parsed: GeneratedIssue;
   try {
-    parsed = JSON.parse(text);
+    parsed = JSON.parse(text) as GeneratedIssue;
   } catch {
     throw new Error("Model returned a response that was not valid JSON.");
   }
@@ -226,23 +181,12 @@ Produce the issue as JSON matching the required schema.`,
       Date.now() - startedAt,
       "scoring",
       "ok",
-      `Draft complete: "${parsed.subjectLine}"`,
-      `${message.usage.input_tokens} in / ${message.usage.output_tokens} out`,
+      `Scored subject line: "${parsed.subjectLine}" (${parsed.engagementIndex})`,
+      usage || undefined,
     ),
   });
 
-  const draft: Pick<
-    Issue,
-    "title" | "standfirst" | "body" | "executiveSummary" | "track"
-  > = {
-    title: parsed.title,
-    standfirst: parsed.standfirst,
-    body: parsed.body,
-    executiveSummary: parsed.executiveSummary,
-    track,
-  };
-
-  emit({ type: "draft", draft });
+  return parsed;
 }
 
 async function runSimulated(
@@ -286,7 +230,7 @@ export async function POST(request: NextRequest) {
     // Empty or malformed body is fine — fall back to the default track.
   }
 
-  const hasKey = Boolean(process.env.ANTHROPIC_API_KEY);
+  const hasKey = hasOpenAIKey();
   const startedAt = Date.now();
   const encoder = new TextEncoder();
   const controller = new AbortController();
@@ -337,7 +281,81 @@ export async function POST(request: NextRequest) {
         }
 
         if (hasKey) {
-          await runLive(emit, track, startedAt, chain);
+          const generated = await runLive(emit, track, startedAt, chain);
+
+          // Pin before publishing so contentURI points at retrievable content
+          // rather than a decorative CID.
+          emit({
+            type: "log",
+            line: makeLine(
+              Date.now() - startedAt,
+              "pinning",
+              "info",
+              "Pinning issue metadata to IPFS",
+              hasPinataKey() ? "pinata" : "no PINATA_JWT",
+            ),
+          });
+
+          const pin = await pinIssueMetadata(
+            {
+              name: generated.title,
+              description: generated.standfirst,
+              content: generated.body,
+              external_url: "https://docs.giwa.io",
+              attributes: [
+                { trait_type: "Track", value: track },
+                { trait_type: "Sentiment", value: generated.sentiment },
+                { trait_type: "Engagement index", value: generated.engagementIndex },
+                { trait_type: "Model", value: openaiModel() },
+                ...(chain.blockNumber
+                  ? [
+                      {
+                        trait_type: "Scanned at block",
+                        value: chain.blockNumber.toString(),
+                      },
+                    ]
+                  : []),
+              ],
+            },
+            controller.signal,
+          );
+
+          emit({
+            type: "log",
+            line: pin.ok
+              ? makeLine(
+                  Date.now() - startedAt,
+                  "pinning",
+                  "ok",
+                  `Pinned ${pin.size} bytes`,
+                  pin.cid,
+                )
+              : makeLine(
+                  Date.now() - startedAt,
+                  "pinning",
+                  "warn",
+                  "Not pinned — publishing is disabled for this draft",
+                  pin.reason.slice(0, 140),
+                ),
+          });
+
+          emit({
+            type: "draft",
+            draft: {
+              title: generated.title,
+              standfirst: generated.standfirst,
+              body: generated.body,
+              executiveSummary: generated.executiveSummary,
+              track,
+            },
+            // The studio needs these to publish on-chain; a draft with no
+            // contentURI must not be publishable.
+            contentURI: pin.ok ? pin.uri : null,
+            gatewayUrl: pin.ok ? ipfsGatewayUrl(pin.uri) : null,
+            subjectLine: generated.subjectLine,
+            engagementIndex: generated.engagementIndex,
+            sentiment: generated.sentiment,
+          });
         } else {
           emit({
             type: "log",
@@ -345,7 +363,7 @@ export async function POST(request: NextRequest) {
               Date.now() - startedAt,
               "synthesizing",
               "warn",
-              "ANTHROPIC_API_KEY not set — replaying the recorded pipeline",
+              "OPENAI_API_KEY not set — replaying the recorded pipeline",
               "simulated",
             ),
           });

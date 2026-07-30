@@ -4,6 +4,7 @@ import { TriangleAlert } from "lucide-react";
 import { ISSUES, TRACKS } from "@/lib/data/issues";
 import { PROTOCOL_STATS } from "@/lib/data/protocol";
 import { readProtocolChainStats } from "@/lib/chain-stats";
+import { INDEX_WINDOW_DAYS, indexProtocolSeries } from "@/lib/indexer";
 import { Hero } from "@/components/feed/hero";
 import { StatRow } from "@/components/feed/stat-row";
 import { FeedGrid } from "@/components/feed/feed-grid";
@@ -22,7 +23,10 @@ export const metadata: Metadata = {
 export const revalidate = 30;
 
 export default async function Home(): Promise<ReactElement> {
-  const chain = await readProtocolChainStats();
+  const [chain, indexed] = await Promise.all([
+    readProtocolChainStats(),
+    indexProtocolSeries(),
+  ]);
   const live = chain.live ? chain : null;
 
   // The gauge visualises the reserved/surplus split, so it must reflect the
@@ -58,19 +62,24 @@ export default async function Home(): Promise<ReactElement> {
               Protocol analytics
             </h2>
             <p className="mt-1.5 text-sm text-ink-muted">
-              Fourteen days of reward claims, active wallets and metered x402
-              calls. The treasury split beside it is read from the contract; the
-              time series is an authored projection, because no indexer exists
-              yet to reconstruct daily history from chain events.
+              {indexed.ok
+                ? `Reward claims and distinct claiming wallets per UTC day, reconstructed from RewardClaimed events over the last ${INDEX_WINDOW_DAYS} days (blocks ${indexed.fromBlock}–${indexed.toBlock}). The treasury split beside it is read from the contract.`
+                : "Reward claims per day. The chain event log could not be read this request, so the chart falls back to an authored projection; the treasury split beside it is still read from the contract."}
             </p>
           </div>
-          <Badge tone="caution" icon={TriangleAlert}>
-            Series is illustrative · not indexed
-          </Badge>
+          {indexed.ok ? (
+            <Badge tone="positive" dot>
+              Indexed from chain events
+            </Badge>
+          ) : (
+            <Badge tone="caution" icon={TriangleAlert}>
+              Series is illustrative · not indexed
+            </Badge>
+          )}
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-          <ProtocolChart series={PROTOCOL_STATS.series} />
+          <ProtocolChart series={indexed.ok ? indexed.points : PROTOCOL_STATS.series} />
           <TreasuryGauge stats={treasuryStats} />
         </div>
       </section>
