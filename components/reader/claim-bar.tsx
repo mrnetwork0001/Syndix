@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
   type ReactElement,
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Mono } from "@/components/ui/mono";
 import { ClaimModal } from "@/components/reader/claim-modal";
+import { useReadSession } from "@/lib/use-read-session";
 import { explorerTx } from "@/lib/giwa";
 import type { Issue } from "@/lib/types";
 import { cn, formatEth, formatKrw, formatUsd, shortHash } from "@/lib/utils";
@@ -56,7 +58,7 @@ export interface StoredClaim {
 
 /**
  * Encoded as `live:0x…` / `sim:0x…` rather than JSON so an older stored value
- * (a bare hash from a previous session) still parses — as simulated, which is
+ * (a bare hash from a previous session) still parses - as simulated, which is
  * the safe reading.
  */
 function decodeClaim(raw: string | null): StoredClaim | null {
@@ -90,8 +92,19 @@ function writeClaim(key: string, hash: string, live: boolean): void {
 export function ClaimBar({ issue }: { issue: Issue }): ReactElement {
   const [progress, setProgress] = useState(0);
   const [atEnd, setAtEnd] = useState(false);
-  const [dwell, setDwell] = useState(0);
   const [open, setOpen] = useState(false);
+
+  // Scroll depth is read by the beat timer rather than pushed into it, so a
+  // fast scroll does not queue a burst of state updates.
+  const depthRef = useRef(0);
+
+  /**
+   * Dwell is measured server-side now. The old client counter was the number
+   * posted to /api/attest, which meant anyone could assert any duration - and a
+   * reader could scroll to the bottom and claim in seconds.
+   */
+  const session = useReadSession(issue.id, depthRef);
+  const dwell = session.dwellSeconds;
 
   const key = claimKey(issue.id);
   const storedRaw = useSyncExternalStore(
@@ -102,14 +115,6 @@ export function ClaimBar({ issue }: { issue: Issue }): ReactElement {
   const claim = decodeClaim(storedRaw);
   const claimedHash = claim?.hash ?? null;
   const claimLive = claim?.live ?? false;
-
-  /* Dwell only accrues while the tab is actually in front of the reader. */
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (!document.hidden) setDwell((seconds) => seconds + 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     const article = document.getElementById(ARTICLE_ID);
@@ -130,9 +135,11 @@ export function ClaimBar({ issue }: { issue: Issue }): ReactElement {
         depth = scrolled / Math.max(1, doc.scrollHeight - viewport);
       }
 
-      setProgress(Math.min(1, Math.max(0, depth)));
+      const clamped = Math.min(1, Math.max(0, depth));
+      setProgress(clamped);
+      depthRef.current = clamped;
 
-      // Yield to the footer at the very bottom — but never on a page with so
+      // Yield to the footer at the very bottom - but never on a page with so
       // little scroll room that the bar could never be reached at all.
       const runway = doc.scrollHeight - viewport;
       setAtEnd(
@@ -195,7 +202,7 @@ export function ClaimBar({ issue }: { issue: Issue }): ReactElement {
                   </span>
                   <div className="min-w-0">
                     <p className="text-[13px] font-medium text-ink">
-                      Reward claimed —{" "}
+                      Reward claimed -{" "}
                       <span className="font-mono tabular-nums">
                         {formatKrw(issue.rewardPerReaderWei)}
                       </span>
@@ -220,7 +227,7 @@ export function ClaimBar({ issue }: { issue: Issue }): ReactElement {
                     Settled on GIWA
                   </Badge>
                 ) : (
-                  <Badge tone="caution">Simulated — not broadcast</Badge>
+                  <Badge tone="caution">Simulated - not broadcast</Badge>
                 )}
               </>
             ) : (
@@ -239,7 +246,7 @@ export function ClaimBar({ issue }: { issue: Issue }): ReactElement {
                       </span>
                     </div>
                     <p className="mt-1 text-[11.5px] leading-relaxed text-ink-faint">
-                      Proof-of-read gate — the claim unlocks past {Math.round(GATE * 100)}%
+                      Proof-of-read gate - the claim unlocks past {Math.round(GATE * 100)}%
                       of the article and is attested off-chain before settlement.
                     </p>
                   </div>
@@ -271,6 +278,7 @@ export function ClaimBar({ issue }: { issue: Issue }): ReactElement {
           open
           onClose={closeModal}
           dwellSeconds={dwell}
+          session={session}
           onClaimed={handleClaimed}
         />
       ) : null}
