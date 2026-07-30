@@ -7,6 +7,7 @@ import {
   Boxes,
   CircleDollarSign,
   Fingerprint,
+  Fuel,
   Landmark,
   ScrollText,
   ShieldCheck,
@@ -416,6 +417,68 @@ export default async function ProtocolPage(): Promise<ReactElement> {
         </Panel>
       </Section>
 
+
+      {/* ---------------------------------------------------------------- */}
+      <Section
+        id="roadmap"
+        eyebrow="Roadmap alignment"
+        title="Two things GIWA is building that Syndix is waiting on"
+        lead="Both were announced as Coming Soon on giwa.io, and both close a gap this build has already run into rather than a hypothetical one."
+      >
+        <div className="grid gap-3 md:grid-cols-2">
+          <Panel className="p-5">
+            <div className="flex items-center gap-2">
+              <Fuel className="size-4 text-accent" strokeWidth={1.9} />
+              <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-ink">
+                Stable PayMaster
+              </h3>
+            </div>
+            <p className="mt-2.5 text-[13.5px] leading-[1.65] text-ink-muted">
+              SyndixPaymaster is deployed, staked and funded against the
+              EntryPoint v0.7 predeploy, and its validation logic is tested — but
+              it cannot be used. Relaying a UserOperation also needs a
+              smart-account factory on GIWA and a bundler serving chain{" "}
+              {GIWA_SEPOLIA_ID}, and neither exists today. A first-party
+              paymaster makes Syndix a consumer of that infrastructure instead of
+              a project that has to run it.
+            </p>
+            <p className="mt-2.5 text-[12px] leading-relaxed text-ink-faint">
+              Until then readers submit their own claim and pay roughly
+              0.00000018 ETH for it — about a 166th of the reward.
+            </p>
+          </Panel>
+
+          <Panel className="p-5">
+            <div className="flex items-center gap-2">
+              <CircleDollarSign className="size-4 text-accent" strokeWidth={1.9} />
+              <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-ink">
+                KRW stablecoin
+              </h3>
+            </div>
+            <p className="mt-2.5 text-[13.5px] leading-[1.65] text-ink-muted">
+              This one fixes a real defect. Syndix promises a 100 KRW
+              micro-reward, but pays 0.00003 ETH — worth about ₩132 when the
+              figure was chosen and about ₩83 a few weeks later. The reader
+              cannot predict what they will receive, and the headline number
+              drifts with a market they never opted into.
+            </p>
+            <p className="mt-2.5 text-[12px] leading-relaxed text-ink-faint">
+              Denominated in a KRW stablecoin, ₩100 is ₩100.{" "}
+              <span className="font-mono">SyndixStableTreasury</span> is written
+              and tested for exactly that — same three invariants, ERC-20 value
+              primitive — and is not deployed, because there is no token to point
+              it at yet.
+            </p>
+          </Panel>
+        </div>
+
+        <p className="mt-5 max-w-2xl text-[13px] leading-relaxed text-ink-faint">
+          GIWA Wallet needs no work: it will inject over EIP-6963, and the
+          connect flow enumerates connectors generically rather than
+          allow-listing them, so it appears as soon as it ships.
+        </p>
+      </Section>
+
       {/* ---------------------------------------------------------------- */}
       <Section
         id="honesty"
@@ -440,11 +503,11 @@ export default async function ProtocolPage(): Promise<ReactElement> {
                 ["Smart contracts", "Real. Deployed, 33 passing tests including a fuzzed solvency invariant.", "positive"],
                 ["Reader reward claim", "Real. Attested, submitted and settled on GIWA Sepolia.", "positive"],
                 ["GIWA chain reads", "Real. This page and the ingestion agent query live state.", "positive"],
-                ["AI issue generation", "Real when ANTHROPIC_API_KEY is set; otherwise a recorded pipeline replays and the studio says so.", "caution"],
+                ["AI issue generation", "Real when OPENAI_API_KEY is set; otherwise a recorded pipeline replays and the studio says so.", "caution"],
                 ["x402 endpoint", "Real protocol. Settlement is verified on-chain now that a treasury exists.", "positive"],
-                ["Editorial dataset", "Authored, not live. Six issues written against verified GIWA facts.", "caution"],
-                ["Gasless via ERC-4337", "Not built. Readers pay their own gas, which is ~0.00000018 ETH.", "critical"],
-                ["IPFS pinning", "Not built. contentURI values are authored CIDs and do not resolve.", "critical"],
+                ["Issue content", "Real. The feed reads the treasury's article index and fetches each body from IPFS. No issue is bundled in the app.", "positive"],
+                ["Gasless via ERC-4337", "Paymaster deployed, staked, funded and tested — but not in the claim path: GIWA has no smart-account factory and no bundler yet.", "caution"],
+                ["IPFS pinning", "Real. Generated issues are pinned to IPFS via Pinata and publishing is blocked if pinning fails.", "positive"],
               ].map(([component, status, tone]) => (
                 <tr key={component} className="border-b border-hairline last:border-b-0">
                   <td className="px-5 py-3 align-top font-medium text-ink">

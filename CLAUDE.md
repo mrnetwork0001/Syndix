@@ -33,7 +33,8 @@ npm run dev               # Next dev server
 npm run build             # production build
 npm run typecheck         # tsc --noEmit
 npm run lint              # eslint (build fails on unused vars/imports)
-npm run contracts:test    # forge test  (34 tests)
+npm run contracts:test    # forge test  (57 tests)
+npm test                  # vitest      (25 tests)
 npm run contracts:deploy  # forge script Deploy --rpc-url giwa_sepolia --broadcast
 npm run abi               # regenerate lib/abi.ts from forge artifacts
 npm run check             # typecheck + lint + build + contracts:test
@@ -44,7 +45,9 @@ npm run check             # typecheck + lint + build + contracts:test
 Next.js 16 (App Router) · React 19 · TypeScript strict · Tailwind CSS v4 · wagmi v3 · viem v2 ·
 motion v12 (`import { motion } from "motion/react"`) · lucide-react · recharts ·
 react-markdown + remark-gfm · Foundry (Solidity 0.8.24, OpenZeppelin v5) ·
-`@anthropic-ai/sdk` with **`claude-opus-5`**.
+`openai` v7 with **`gpt-4.1`** (override via `OPENAI_MODEL`). Structured Outputs
+with `strict: true` — every property must be in `required` and every object needs
+`additionalProperties: false`, or the request is rejected.
 
 Next 16 specifics that bite: dynamic route `params` and `searchParams` are **Promises**
 (`await params`); `themeColor` belongs in `export const viewport`, not `metadata`.
@@ -56,7 +59,7 @@ app/
   page.tsx                    reader feed
   issue/[id]/page.tsx         issue reader + claim flow
   studio/page.tsx             AI agent studio
-  api/agent/run/route.ts      NDJSON pipeline stream (live claude-opus-5, or simulated)
+  api/agent/run/route.ts      NDJSON pipeline stream (live OpenAI, or simulated)
   api/x402/feed/route.ts      HTTP 402 machine-payable alpha feed
   api/attest/route.ts         EIP-712 ReadProof signer (the claim gate)
   api/stats/route.ts          protocol stats
@@ -73,8 +76,15 @@ lib/
   attest.ts   EIP-712 domain/types — must match SyndixTreasury byte for byte
   onchain.ts  dataset issue id <-> on-chain article id mapping
   chain-stats.ts  live treasury reads; returns a live|offline union
+  onchain-issues.ts  THE issue source — treasury index + IPFS bodies
+  issue-adapter.ts   maps an on-chain article onto the Issue render shape
+  indexer.ts  daily series from RewardClaimed/ArticlePublished events
+  ipfs.ts     Pinata pinning (write) + ipfs.io gateway (read)
+  openai.ts   client, model, issue JSON schema, system prompt
+  prices.ts   live ETH/USD + ETH/KRW; formatters read the ambient snapshot
   data/       the editorial dataset (issues, protocol stats, agent run script)
-contracts/    SyndixTreasury.sol, SyndixArticleNFT.sol, mocks/, interfaces/
+contracts/    SyndixTreasury.sol, SyndixArticleNFT.sol, SyndixPaymaster.sol,
+              SyndixStableTreasury.sol (KRW variant, not deployed), mocks/, interfaces/
 test/contracts/  Foundry tests
 script/Deploy.s.sol
 ```
@@ -125,9 +135,13 @@ smart accounts.
 SyndixTreasury    0x5465f31a6155E3eCCcC35f4E5bDC0e287763B0ee
 SyndixArticleNFT  0xA0D49A6C4Ac081a2de9af2f422EdfffB8f41190e
 MockUpIdRegistry  0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d
+SyndixPaymaster   0x3B13186a1E4b1108eA5CB2f8853D84A2aeD71Cc5
 ```
 
-Six issues are published with funded pools and real reader claims settle. Addresses come
+Issues are published with funded pools and real reader claims settle. **The app
+bundles no article content** — `lib/onchain-issues.ts` reads the treasury index
+and fetches bodies from IPFS. `lib/data/issues.ts` survives only as a source of
+TRACKS and the scripted studio replay; do not add issues to it. Addresses come
 from `.env.local` (`NEXT_PUBLIC_SYNDIX_*`); with them unset the app falls back to the
 dataset and says so.
 
