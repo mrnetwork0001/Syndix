@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------------------------ */
-/*  Syndix Design System — Raycast / Linear-grade dark glassmorphism   */
+/*  Syndix Design System - Raycast / Linear-grade dark glassmorphism   */
 /* ------------------------------------------------------------------ */
 
 @theme {
@@ -11,7 +11,7 @@
   --color-elevated: #1a1a1e;
   --color-overlay: #202026;
 
-  /* Accent — GIWA blue */
+  /* Accent - GIWA blue */
   --color-accent: #0066ff;
   --color-accent-hover: #1a75ff;
   --color-accent-soft: #0b1f3d;
@@ -151,7 +151,7 @@ body {
   color: transparent;
 }
 
-/* Grain overlay — kills banding on large dark gradients */
+/* Grain overlay - kills banding on large dark gradients */
 .grain {
   position: relative;
 }
@@ -236,7 +236,7 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Markdown — issue reader typography                                 */
+/*  Markdown - issue reader typography                                 */
 /* ------------------------------------------------------------------ */
 
 .markdown {
@@ -384,4 +384,124 @@ body {
   max-width: 100%;
   border-radius: var(--radius-card);
   border: 1px solid var(--color-hairline);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Print                                                              */
+/* ------------------------------------------------------------------ */
+
+/* The /tech page doubles as the submitted technical design document: one
+   artifact serves the shareable link and the PDF, so they cannot drift apart.
+   Browsers strip background graphics by default, and a dark surface prints as
+   either a black slab or unreadable pale text - so print gets an explicit light
+   treatment rather than a washed-out screen theme. */
+@media print {
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+
+  @page {
+    margin: 14mm 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  .print-doc,
+  .print-doc * {
+    color: #111 !important;
+    border-color: #d4d4d8 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    background-image: none !important;
+  }
+
+  .print-doc .panel,
+  .print-doc .glass {
+    background: #fff !important;
+    border: 1px solid #d4d4d8 !important;
+  }
+
+  /* Muted tiers still need contrast on paper. */
+  .print-doc .text-ink-muted,
+  .print-doc .text-ink-faint {
+    color: #444 !important;
+  }
+
+  .print-doc a {
+    color: #111 !important;
+    text-decoration: underline;
+  }
+
+  /* Keep a claim and its evidence on the same page. */
+  .print-doc section,
+  .print-doc tr,
+  .print-doc .panel {
+    break-inside: avoid;
+  }
+
+  .print-doc h1,
+  .print-doc h2,
+  .print-doc h3 {
+    break-after: avoid;
+  }
+
+  .print-break {
+    break-before: page;
+  }
+
+  /* One sheet, single column. Two columns were tried and still ran to a second
+     page: the figure tables cost more vertical space than prose, so the fix was
+     cutting content rather than squeezing type. */
+  .print-doc .doc-body {
+    font-size: 8.6pt;
+    line-height: 1.4;
+  }
+
+  .print-doc .doc-body h2 {
+    font-size: 8.8pt;
+    margin-top: 0;
+  }
+
+  .print-doc .doc-body section {
+    margin-top: 0;
+    margin-bottom: 2.4mm;
+    break-inside: auto;
+  }
+
+  .print-doc .doc-body li {
+    margin-bottom: 0.4mm;
+  }
+
+  .print-doc .doc-row {
+    padding-top: 0.7mm;
+    padding-bottom: 0.7mm;
+  }
+
+  .print-doc header {
+    padding-bottom: 2.5mm;
+  }
+
+  .print-doc header h1 {
+    font-size: 15pt;
+  }
+
+  .print-doc .doc-head-lead {
+    font-size: 8.8pt;
+  }
+
+  .print-doc footer {
+    margin-top: 3mm;
+    padding-top: 2mm;
+    font-size: 7.4pt;
+  }
+
+  .print-doc .keep-together {
+    break-inside: avoid;
+  }
 }

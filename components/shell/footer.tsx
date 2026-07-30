@@ -21,6 +21,7 @@ const COLUMNS: { heading: string; links: FooterLink[] }[] = [
       { href: "/", label: "Reader Feed" },
       { href: "/studio", label: "Agent Studio" },
       { href: "/protocol", label: "Protocol" },
+      { href: "/tech", label: "Technical Doc" },
     ],
   },
   {
@@ -44,7 +45,7 @@ const COLUMNS: { heading: string; links: FooterLink[] }[] = [
 export function Footer(): ReactElement {
   return (
     <footer className="relative mt-auto overflow-hidden border-t border-hairline">
-      {/* Faint engineering grid — decorative, must never intercept clicks. */}
+      {/* Faint engineering grid - decorative, must never intercept clicks. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.35]"
@@ -72,7 +73,7 @@ export function Footer(): ReactElement {
 
             <p className="mt-5 max-w-[42ch] text-[14px] leading-[1.75] text-ink-muted text-pretty">
               Autonomous AI news syndicate on GIWA L2. Agents read the chain,
-              publish each issue on-chain, and pay verified readers for
+              publish each issue onchain, and pay verified readers for
               finishing them.
             </p>
 
@@ -166,7 +167,7 @@ function FooterMark(): ReactElement {
         fill="none"
         stroke="rgba(255,255,255,0.14)"
       />
-      {/* Interlocking roof tiles — giwa (기와) means Korean roof tile. */}
+      {/* Interlocking roof tiles - giwa (기와) means Korean roof tile. */}
       <g
         fill="none"
         stroke="#ffffff"

@@ -36,12 +36,20 @@ import { compact, formatEth, formatKrw, formatUsd } from "@/lib/utils";
 export const metadata: Metadata = {
   title: "Protocol",
   description:
-    "How Syndix pays readers on GIWA: the reward economics measured on-chain, the sybil model behind up.id, and what is real versus simulated.",
+    "How Syndix pays readers on GIWA: the reward economics measured onchain, the sybil model behind up.id, and what is real versus simulated.",
 };
 
-// Chain state must not be baked into a static build — these numbers are the
+// Chain state must not be baked into a static build - these numbers are the
 // entire point of the page.
-export const dynamic = "force-dynamic";
+/**
+ * ISR rather than force-dynamic. This page runs the event indexer, which scans
+ * a wide block range and takes seconds on a cold cache - on a serverless host
+ * that is a request-timeout risk on every hit, and it re-pays the cost because
+ * the module-level caches in lib/ do not survive a cold start. Sixty seconds of
+ * staleness on an argument page is not a cost worth paying to avoid.
+ */
+export const revalidate = 60;
+export const maxDuration = 60;
 
 /** The first real claim settled on GIWA Sepolia. */
 const FIRST_CLAIM_TX =
@@ -123,9 +131,9 @@ export default async function ProtocolPage(): Promise<ReactElement> {
         </h1>
         <p className="mt-5 max-w-2xl text-[15.5px] leading-[1.75] text-ink-muted text-pretty">
           Syndix runs an AI journalist over GIWA chain state, publishes each
-          issue on-chain with a funded reward pool, and settles a micro-reward to
+          issue onchain with a funded reward pool, and settles a micro-reward to
           every verified reader who finishes it. Every number on this page is
-          read from the deployed contract when you load it — nothing here is
+          read from the deployed contract when you load it - nothing here is
           typed in by hand.
         </p>
       </header>
@@ -190,7 +198,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
         {chain.live ? (
           <Panel className="px-5 py-2">
             <dl>
-              <Row label="Issues published on-chain">
+              <Row label="Issues published onchain">
                 <span className="font-mono text-[13px] tabular-nums text-ink">
                   {chain.articleCount}
                 </span>
@@ -218,7 +226,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
                   {formatEth(chain.unreservedBalanceWei)}
                 </span>
               </Row>
-              <Row label="Solvency invariant — balance ≥ reserved">
+              <Row label="Solvency invariant - balance ≥ reserved">
                 {chain.solvent ? (
                   <Badge tone="positive" icon={ShieldCheck}>
                     Holds
@@ -245,7 +253,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
       <Section
         id="how"
         eyebrow="How it works"
-        title="Four steps, three of them on-chain"
+        title="Four steps, three of them onchain"
       >
         <ol className="grid gap-3 sm:grid-cols-2">
           {[
@@ -262,7 +270,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
             {
               icon: Signature,
               title: "Reading produces an attestation",
-              body: "Finish an issue and the attester signs an EIP-712 ReadProof binding your address, the article and your dwell time. It signs only — it never holds funds.",
+              body: "Finish an issue and the attester signs an EIP-712 ReadProof binding your address, the article and your dwell time. It signs only - it never holds funds.",
             },
             {
               icon: Zap,
@@ -296,7 +304,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
       <Section
         id="sybil"
         eyebrow="Security model"
-        title="One human, one claim — or there is no business"
+        title="One human, one claim - or there is no business"
         lead="A reward pool keyed on wallet addresses is not a product, it is a faucet. With 1-second blocks and sub-cent gas, a script generates ten thousand addresses and drains every pool in a single block. Everything below exists to stop that."
       >
         <div className="grid gap-3 md:grid-cols-3">
@@ -304,7 +312,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
             {
               icon: Fingerprint,
               title: "Identity",
-              body: "Claims require a verified GIWA identity through IReaderRegistry, pointed at the live Upbit Web3 Names registry. A name is a Soul-Bound Token capped at one per wallet, issued by GIWA and not by us — Syndix cannot mint itself the credential it checks. That cap is the whole security model.",
+              body: "Claims require a verified GIWA identity through IReaderRegistry, pointed at the live Upbit Web3 Names registry. A name is a Soul-Bound Token capped at one per wallet, issued by GIWA and not by us - Syndix cannot mint itself the credential it checks. That cap is the whole security model.",
             },
             {
               icon: Signature,
@@ -344,7 +352,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
       >
         <Panel className="px-5 py-2">
           <dl>
-            <Row label="Flashblocks — preconfirmations up to 200ms">
+            <Row label="Flashblocks - preconfirmations up to 200ms">
               <Mono className="text-[11.5px]">{GIWA_RPC_FLASHBLOCKS}</Mono>
             </Row>
             <Row label="~1s blocks, sub-cent fees">
@@ -352,7 +360,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
                 makes a $0.10 reward viable
               </span>
             </Row>
-            <Row label="up.id — Soul-Bound, one per wallet">
+            <Row label="up.id - Soul-Bound, one per wallet">
               <span className="text-[13px] text-ink-muted">
                 one ecosystem namespace, read by our reader registry
               </span>
@@ -435,7 +443,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
             </div>
             <p className="mt-2.5 text-[13.5px] leading-[1.65] text-ink-muted">
               SyndixPaymaster is deployed, staked and funded against the
-              EntryPoint v0.7 predeploy, and its validation logic is tested — but
+              EntryPoint v0.7 predeploy, and its validation logic is tested - but
               it cannot be used. Relaying a UserOperation also needs a
               smart-account factory on GIWA and a bundler serving chain{" "}
               {GIWA_SEPOLIA_ID}, and neither exists today. A first-party
@@ -444,7 +452,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
             </p>
             <p className="mt-2.5 text-[12px] leading-relaxed text-ink-faint">
               Until then readers submit their own claim and pay roughly
-              0.00000018 ETH for it — about a 166th of the reward.
+              0.00000018 ETH for it - about a 166th of the reward.
             </p>
           </Panel>
 
@@ -457,7 +465,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
             </div>
             <p className="mt-2.5 text-[13.5px] leading-[1.65] text-ink-muted">
               This one fixes a real defect. Syndix promises a 100 KRW
-              micro-reward, but pays 0.00003 ETH — worth about ₩132 when the
+              micro-reward, but pays 0.00003 ETH - worth about ₩132 when the
               figure was chosen and about ₩83 a few weeks later. The reader
               cannot predict what they will receive, and the headline number
               drifts with a market they never opted into.
@@ -465,8 +473,8 @@ export default async function ProtocolPage(): Promise<ReactElement> {
             <p className="mt-2.5 text-[12px] leading-relaxed text-ink-faint">
               Denominated in a KRW stablecoin, ₩100 is ₩100.{" "}
               <span className="font-mono">SyndixStableTreasury</span> is written
-              and tested for exactly that — same three invariants, ERC-20 value
-              primitive — and is not deployed, because there is no token to point
+              and tested for exactly that - same three invariants, ERC-20 value
+              primitive - and is not deployed, because there is no token to point
               it at yet.
             </p>
           </Panel>
@@ -504,9 +512,9 @@ export default async function ProtocolPage(): Promise<ReactElement> {
                 ["Reader reward claim", "Real. Attested, submitted and settled on GIWA Sepolia.", "positive"],
                 ["GIWA chain reads", "Real. This page and the ingestion agent query live state.", "positive"],
                 ["AI issue generation", "Real when OPENAI_API_KEY is set; otherwise a recorded pipeline replays and the studio says so.", "caution"],
-                ["x402 endpoint", "Real protocol. Settlement is verified on-chain now that a treasury exists.", "positive"],
+                ["x402 endpoint", "Real protocol. Settlement is verified onchain now that a treasury exists.", "positive"],
                 ["Issue content", "Real. The feed reads the treasury's article index and fetches each body from IPFS. No issue is bundled in the app.", "positive"],
-                ["Gasless via ERC-4337", "Paymaster deployed, staked, funded and tested — but not in the claim path: GIWA has no smart-account factory and no bundler yet.", "caution"],
+                ["Gasless via ERC-4337", "Paymaster deployed, staked, funded and tested - but not in the claim path: GIWA has no smart-account factory and no bundler yet.", "caution"],
                 ["IPFS pinning", "Real. Generated issues are pinned to IPFS via Pinata and publishing is blocked if pinning fails.", "positive"],
               ].map(([component, status, tone]) => (
                 <tr key={component} className="border-b border-hairline last:border-b-0">
