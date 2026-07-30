@@ -25,6 +25,7 @@ Several of these correct widely-circulated errors. Check here before writing cha
 | Attestations | **Dojang**, built on EAS (predeployed `0x4200000000000000000000000000000000000021`). Issues Verified Address / Balance Root / Verified Balance / Verified Code. Upbit Korea is the primary issuer. |
 | Gasless | **No first-party "GIWA Paymaster" product exists.** ERC-4337 EntryPoint v0.6 (`0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789`) and v0.7 (`0x0000000071727De22E5E9d8BAf0edAc6f37da032`) are predeployed at genesis; you bring your own paymaster. |
 | Other predeploys | Multicall3 `0xcA11...CA11`, Permit2 `0x0000...78A3`, Safe, WETH9 `0x42..06`, L2StandardBridge `0x42..10`, GasPriceOracle `0x42..0F` |
+| Contract verification | All deployments verify as **partial match**, not full. `foundry.toml` sets `bytecode_hash = "none"`, so no source-metadata hash is embedded and Blockscout has nothing to compare - partial is the ceiling. Do not re-verify hoping for full; only a redeploy with `bytecode_hash = "ipfs"` would change it. |
 | L1 Sepolia | OptimismPortal `0x956962C34687A954e611A83619ABaA37Ce6bC78A`, L1StandardBridge `0x77b2ffc0F57598cAe1DB76cb398059cF5d10A7E7` |
 
 All of the above live in `lib/giwa.ts` - import from there rather than re-typing addresses.

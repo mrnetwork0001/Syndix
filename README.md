@@ -77,7 +77,16 @@ contract that closes that gap safely, written and tested but not yet deployed.
 | `SyndixPaymaster` | [`0x3B13186a1E4b1108eA5CB2f8853D84A2aeD71Cc5`](https://sepolia-explorer.giwa.io/address/0x3B13186a1E4b1108eA5CB2f8853D84A2aeD71Cc5) |
 | `MockUpIdRegistry` (superseded, test fixture) | [`0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d`](https://sepolia-explorer.giwa.io/address/0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d) |
 
-All are verified on the GIWA explorer.
+All five are verified on the GIWA explorer, each publishing full source, ABI and
+decoded constructor arguments.
+
+They show as *partial* rather than *full* match, and that is a build setting rather than
+an incomplete verification: `foundry.toml` sets `bytecode_hash = "none"`, so the deployed
+bytecode carries no source-metadata hash - its trailing bytes decode to `solc 0.8.24` and
+nothing more. A full match is Blockscout comparing that hash, so with none embedded,
+partial is the ceiling for these deployments. Re-verifying cannot change it; only
+redeploying with `bytecode_hash = "ipfs"` could, at the cost of every published article
+and reader claim. Nothing a reviewer reads differs between the two tiers.
 
 `SyndixTreasury.readerRegistry` points at `UpIdReaderRegistry`, so **claims are gated on
 the real, ecosystem-wide Upbit Web3 Names registry**
