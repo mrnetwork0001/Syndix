@@ -1,8 +1,8 @@
 "use client";
 
-import type { ReactElement } from "react";
-import { useBlockNumber } from "wagmi";
-import { GIWA_SEPOLIA_ID } from "@/lib/giwa";
+import { useEffect, useRef, useState, type ReactElement } from "react";
+import { createPublicClient, http } from "viem";
+import { GIWA_RPC_HTTP, giwaSepolia } from "@/lib/giwa";
 import { cn } from "@/lib/utils";
 
 export interface LiveBlockProps {
@@ -15,24 +15,54 @@ export interface LiveBlockProps {
   className?: string;
 }
 
+/** A touch under GIWA's ~1s block time, so the number never looks stuck. */
+const POLL_MS = 900;
+
 /**
  * The head block, ticking.
  *
- * GIWA produces a block roughly every second, so a height captured at render
- * time is stale before the page finishes painting. Polling a little under the
- * block time keeps it honest and makes the chain's speed visible, which is most
- * of the point of building here.
+ * Polls explicitly rather than using wagmi's `useBlockNumber({ watch })`. That
+ * hook takes `pollingInterval` only inside its `poll: true` branch; passing the
+ * interval without the flag lands in the WebSocket-subscription branch, which
+ * never fires against GIWA's HTTP transport — the number silently froze. A
+ * plain interval is one line longer and has no such failure mode.
  */
 export function LiveBlock({
   initialBlock,
   className,
 }: LiveBlockProps): ReactElement {
-  const { data: blockNumber } = useBlockNumber({
-    chainId: GIWA_SEPOLIA_ID,
-    watch: { pollingInterval: 900 },
-  });
+  const [block, setBlock] = useState(initialBlock);
+  const latest = useRef(initialBlock);
 
-  const current = blockNumber?.toString() ?? initialBlock;
+  useEffect(() => {
+    const client = createPublicClient({
+      chain: giwaSepolia,
+      transport: http(GIWA_RPC_HTTP, { retryCount: 0 }),
+    });
+
+    let cancelled = false;
+
+    const tick = async () => {
+      try {
+        const next = (await client.getBlockNumber({ cacheTime: 0 })).toString();
+        // Skip the state write when the height has not moved, so React is not
+        // re-rendering the whole badge every second for nothing.
+        if (!cancelled && next !== latest.current) {
+          latest.current = next;
+          setBlock(next);
+        }
+      } catch {
+        // A dropped poll is not worth surfacing; the next one will land.
+      }
+    };
+
+    void tick();
+    const timer = window.setInterval(tick, POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   return (
     <span className={cn("inline-flex items-center gap-1.5", className)}>
@@ -42,14 +72,9 @@ export function LiveBlock({
       />
       <span className="whitespace-nowrap">
         Live · block{" "}
-        {/*
-          Keying on the height remounts this span every block, which replays the
-          CSS animation. A useEffect + setState flash would fire setState
-          synchronously inside an effect — a cascading render the lint rule
-          rightly rejects — and this needs no state at all.
-        */}
-        <span key={current} className="animate-rise font-mono tabular-nums">
-          {current}
+        {/* Keyed on the height so the CSS rise animation replays each block. */}
+        <span key={block} className="animate-rise font-mono tabular-nums">
+          {block}
         </span>
       </span>
     </span>
