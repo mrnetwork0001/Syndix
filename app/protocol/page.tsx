@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Mono } from "@/components/ui/mono";
 import { Panel } from "@/components/ui/panel";
+import { Reveal } from "@/components/ui/reveal";
 import { StatTile } from "@/components/ui/stat-tile";
 import { CopyButton } from "@/components/ui/copy-button";
 import { claimEconomics, readProtocolChainStats } from "@/lib/chain-stats";
@@ -68,20 +69,26 @@ function Section({
   lead?: string;
   children: ReactNode;
 }): ReactElement {
+  // Every section on this page goes through here, so one Reveal gives the whole
+  // argument a reading rhythm: each block settles as the reader reaches it.
   return (
     <section id={id} className="scroll-mt-24 border-t border-hairline pt-12">
-      <p className="text-[11px] tracking-[0.14em] text-ink-faint uppercase">
-        {eyebrow}
-      </p>
-      <h2 className="mt-2.5 text-2xl font-semibold tracking-[-0.02em] text-ink sm:text-[27px]">
-        {title}
-      </h2>
-      {lead ? (
-        <p className="mt-3 max-w-2xl text-[15px] leading-[1.7] text-ink-muted text-pretty">
-          {lead}
+      <Reveal>
+        <p className="text-[11px] tracking-[0.14em] text-ink-faint uppercase">
+          {eyebrow}
         </p>
-      ) : null}
-      <div className="mt-7">{children}</div>
+        <h2 className="mt-2.5 text-2xl font-semibold tracking-[-0.02em] text-ink sm:text-[27px]">
+          {title}
+        </h2>
+        {lead ? (
+          <p className="mt-3 max-w-2xl text-[15px] leading-[1.7] text-ink-muted text-pretty">
+            {lead}
+          </p>
+        ) : null}
+      </Reveal>
+      <Reveal delay={0.08}>
+        <div className="mt-7">{children}</div>
+      </Reveal>
     </section>
   );
 }
@@ -508,7 +515,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
             </thead>
             <tbody>
               {[
-                ["Smart contracts", "Real. Deployed and verified, 83 passing Foundry tests including three fuzzed invariants.", "positive"],
+                ["Smart contracts", "Real. Deployed and verified, 101 passing Foundry tests including three fuzzed invariants.", "positive"],
                 ["Reader reward claim", "Real. Attested by /api/attest, submitted by the reader, settled on GIWA Sepolia.", "positive"],
                 ["Proof of read", "Real, and measured by the server. A signed session is stamped with the server clock, heartbeats carry scroll depth, and beats arriving faster than real time are refused - dwell is never client-reported. It proves time and scrolling, not comprehension.", "positive"],
                 ["up.id identity", "Real, and not ours. Claims gate on the live Upbit Web3 Names registry, so a wallet without a genuine up.id cannot claim - including our own deployer.", "positive"],
@@ -518,6 +525,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
                 ["Analytics time series", "Real. Daily buckets reconstructed from RewardClaimed and ArticlePublished logs. Empty days render empty rather than interpolated.", "positive"],
                 ["AI issue generation", "Real. Every live issue was written by gpt-4.1 against a strict JSON schema, seeded with head state read at generation time - each one records its model in the IPFS metadata the treasury points at, so the claim is checkable rather than asserted.", "positive"],
                 ["x402 endpoint", "Real protocol. Settlement is verified onchain now that a treasury exists.", "positive"],
+                ["Sponsorship revenue", "Contract written and tested, not deployed. SyndixSponsorship splits each deposit into a capped protocol fee and a reader-committed remainder no owner function can reach. To date the treasury is entirely self-funded and external revenue is zero.", "caution"],
                 ["Autonomous publishing", "Not built. Writing is unattended, but publishing needs an owner signature and there is no scheduler. SyndixPublisher, the guard that closes this safely, is written and tested with 21 tests but not deployed.", "caution"],
                 ["Gasless via ERC-4337", "Paymaster deployed, staked, funded and tested - but not in the claim path: GIWA has no smart-account factory and no bundler yet, so readers pay their own gas.", "caution"],
                 ["KRW denomination", "Not deployed. SyndixStableTreasury is written and tested against a mock; GIWA's KRW stablecoin does not exist yet.", "caution"],

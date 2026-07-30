@@ -199,7 +199,7 @@ export default async function TechDoc(): Promise<ReactElement> {
           </div>
           <p className="text-[11px] text-ink-faint">
             <Mono className="text-[10.5px]">SyndixPublisher</Mono> (autonomy
-            guard, 21 tests) and{" "}
+            guard, 21 tests), SyndixSponsorship (fee split, 18 tests) and{" "}
             <Mono className="text-[10.5px]">SyndixStableTreasury</Mono> (KRW
             variant) are written and tested, not deployed.
           </p>
@@ -237,8 +237,8 @@ export default async function TechDoc(): Promise<ReactElement> {
             )}
           </div>
           <p>
-            <strong className="text-ink">Real:</strong> contracts (83 Foundry
-            tests, two fuzzed solvency invariants), chain reads, AI-written and
+            <strong className="text-ink">Real:</strong> contracts (101 Foundry
+            tests, three fuzzed solvency invariants), chain reads, AI-written and
             IPFS-pinned issues, the claim path end to end, server-measured proof
             of read, up.id gating, analytics rebuilt from event logs.{" "}
             <strong className="text-ink">Not yet:</strong> publishing needs an
@@ -261,7 +261,7 @@ export default async function TechDoc(): Promise<ReactElement> {
 
       <footer className="mt-5 border-t border-hairline pt-2 text-[10.5px] leading-relaxed text-ink-faint">
         Next.js 16 · React 19 · Tailwind v4 · wagmi v3 · viem v2 · Foundry with
-        OpenZeppelin v5 · openai gpt-4.1. 83 Foundry tests, 48 unit tests. Full
+        OpenZeppelin v5 · openai gpt-4.1. 101 Foundry tests, 48 unit tests. Full
         detail at syndix.xyz/protocol and github.com/mrnetwork0001/Syndix
       </footer>
     </div>

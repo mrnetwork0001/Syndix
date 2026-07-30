@@ -208,6 +208,89 @@ and pay about 0.00000018 ETH; the paymaster is standing infrastructure.
 
 ---
 
+## Sustainability: how this pays for itself
+
+**Written and tested, not deployed.**
+
+Today the treasury is a subsidy. Every wei in it came from us, and at the
+current reward it funds a few dozen more claims. That is fine for a testnet MVP
+and cannot be the story.
+
+The model is not "find money to pay readers". It is **redirecting the
+advertising budget one step further down the chain**. Today an advertiser pays a
+publisher to harvest a reader's attention and the reader receives nothing. Here
+the sponsor's money lands in the reader's wallet and the protocol takes a fee
+for running the newsroom. The reward is not a cost centre; it is the product
+sold to sponsors.
+
+It is also a better ad product, for reasons specific to what is built here:
+proof of read is onchain and checkable, so there are no phantom impressions, and
+one `up.id` is one human, so there is no bot traffic. Ad fraud is a roughly
+$80B/year problem, and the sybil gate plus server-measured attention is an
+anti-fraud primitive that happens to pay the audience.
+
+### SyndixSponsorship
+
+`SyndixTreasury.depositSponsorship` already accepts funding, but every wei of it
+lands in the unreserved balance, which the owner may withdraw. Nothing is
+earmarked: a sponsor has to trust that we will not take it back, and nothing is
+set aside to run the newsroom either. This contract fixes both ends.
+
+Each deposit is split once, at deposit time:
+
+| Bucket | Who can reach it |
+| --- | --- |
+| `accruedFees` | the owner, via `withdrawFees`. Operating revenue. |
+| `committed` | **nobody except readers.** The only path out is `fundTreasury`. |
+
+The fee is capped at **30% by an immutable constant**, not an owner-settable
+bound, because an owner who can raise their own ceiling does not have one. It is
+never retroactive: the split is banked per deposit, so raising the fee cannot
+claw back money already promised. Integer rounding falls to the readers.
+
+`fundTreasury` is permissionless. It has exactly one destination, fixed at
+construction, so letting anyone push sponsor money toward readers costs nothing
+and removes the operator as a point of failure. **There is no counterpart with a
+caller-supplied address, and that absence is the guarantee** - a sponsor can
+verify before paying that the non-fee portion cannot be pocketed.
+
+18 tests, most of them attempts to take the readers' share back, including a
+fuzzed check that the balance always covers `committed + accruedFees` through any
+sequence of deposits, forwards and fee sweeps. Deployed separately rather than
+folded into the treasury, which is live and verified on the explorer: editing it
+would mean the repo no longer reproduces the deployed bytecode.
+
+**Honest limitation, pinned by a test rather than a comment.** Forwarded funds
+land in the treasury's *unreserved* balance, and `publishArticle` is payable
+rather than drawing on it, so the operator still attaches the pool and recycles
+the sponsorship through `withdrawTreasury`. There is no contract-enforced link
+from a given deposit to a given article pool. Adding `publishFromBalance` to the
+next treasury version closes that, and is on the roadmap.
+
+### The other two rails
+
+Both already route money to the treasury:
+
+- **x402 agent feed** - `payTo` is the treasury and settlement is verified
+  onchain. Currently underpriced: a call costs about $0.012 against a $0.057
+  reward, so five agent requests fund one reader. Pricing per value rather than
+  per call inverts that.
+- **`SyndixArticleNFT.collect`** - priced editions forward `msg.value` to the
+  treasury.
+
+### Unit economics
+
+Per issue today: 20 readers at $0.057 is **$1.14 in rewards**, plus about $0.03
+of generation. At this size the numbers are a rounding error either way.
+
+At 1,000 verified readers per issue it is **$57 in rewards**. Newsletter
+sponsorships run $25-50 CPM against unverified audiences; proven attention
+justifies the top of that band, so roughly $150-300 against about $60 of cost.
+That works, but it needs an audience, and the honest answer is that the grant is
+the runway to build one.
+
+---
+
 ## SyndixPublisher
 
 **Written and tested, not deployed.** The path to an unattended newsroom.
@@ -308,7 +391,7 @@ Without `OPENAI_API_KEY` the studio replays a recorded pipeline and badges itsel
 ### Contracts
 
 ```bash
-npm run contracts:test     # 83 tests
+npm run contracts:test     # 101 tests
 npm run contracts:deploy   # to GIWA Sepolia
 npm run abi                # regenerate lib/abi.ts from the artifacts
 npm run check              # typecheck + lint + build + contracts:test
@@ -359,7 +442,7 @@ at it. That split is what makes "collect the issue" a consumer action rather tha
 decision.
 
 ```
-forge test    83 passed, 0 failed
+forge test    101 passed, 0 failed
 npm test      48 passed, 0 failed
 ```
 
@@ -374,7 +457,7 @@ Stated plainly, because a grant reviewer should not have to guess:
 
 | Component | Status |
 | --- | --- |
-| Smart contracts | **Real.** Solidity 0.8.24, 83 passing Foundry tests including two fuzzed solvency invariants. |
+| Smart contracts | **Real.** Solidity 0.8.24, 101 passing Foundry tests including three fuzzed solvency invariants. |
 | GIWA chain reads | **Real.** Live head state and gas price from the Flashblocks RPC on every run, verifiable on the explorer. |
 | Issue content | **Real.** Written by `gpt-4.1` against live chain state, pinned to IPFS, read back from the treasury index. The app bundles no article bodies. |
 | AI issue generation | **Real.** Every live issue was written by `gpt-4.1` against a strict JSON schema, streamed, Structured Outputs with `strict: true`. Each records its model in the IPFS metadata the treasury points at, so the claim is checkable. A clone without `OPENAI_API_KEY` replays a recorded pipeline and the studio badges itself "Simulated". |
@@ -384,6 +467,7 @@ Stated plainly, because a grant reviewer should not have to guess:
 | IPFS pinning | **Real.** Pinned through Pinata on publish; publishing aborts if pinning fails, so no article is indexed with an unresolvable CID. |
 | Analytics time series | **Real.** Daily buckets reconstructed from `RewardClaimed` and `ArticlePublished` logs. Empty days render empty rather than interpolated. |
 | x402 endpoint | **Real protocol, real verification when deployed.** With a treasury set it verifies settlement onchain; without one it accepts a well-formed hash and returns `verification: "accepted-unverified"`. |
+| Sponsorship revenue | **Contract written and tested, not deployed.** `SyndixSponsorship` splits each deposit into a capped protocol fee and a reader-committed remainder that no owner function can reach. To date the treasury is 100% self-funded and external revenue is zero. |
 | Autonomous publishing | **Not built.** Writing is autonomous; publishing needs an owner signature. `SyndixPublisher` is written and tested but not deployed. |
 | ERC-4337 gasless | **Paymaster real, sponsorship not reachable.** Deployed, staked and funded, sponsoring only `claimReaderReward`, but GIWA Sepolia has no bundler serving 91342 and no smart-account factory, so readers pay their own gas. |
 | KRW denomination | **Not deployed.** `SyndixStableTreasury` is written and tested against a mock; GIWA's KRW stablecoin does not exist yet. |
@@ -399,8 +483,10 @@ Stated plainly, because a grant reviewer should not have to guess:
 3. **Gasless claims** once a bundler serves chain 91342 and a smart-account factory is
    available. The paymaster is already deployed and funded.
 4. **KRW denomination** when GIWA's stablecoin ships, so a 100 KRW promise pays 100 KRW.
-5. **Sponsor-funded pools**, letting third parties fund an issue's rewards through
-   `depositSponsorship`.
+5. **Deploy `SyndixSponsorship`** and open sponsored issues, turning the treasury
+   from a subsidy into revenue. Then `publishFromBalance` on the treasury, so a
+   sponsor's deposit is bound to an article pool by the contract rather than by
+   the operator recycling it.
 
 ---
 
