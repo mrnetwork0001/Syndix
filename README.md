@@ -377,7 +377,7 @@ Stated plainly, because a grant reviewer should not have to guess:
 | Smart contracts | **Real.** Solidity 0.8.24, 83 passing Foundry tests including two fuzzed solvency invariants. |
 | GIWA chain reads | **Real.** Live head state and gas price from the Flashblocks RPC on every run, verifiable on the explorer. |
 | Issue content | **Real.** Written by `gpt-4.1` against live chain state, pinned to IPFS, read back from the treasury index. The app bundles no article bodies. |
-| AI issue generation | **Real when `OPENAI_API_KEY` is set**, streamed, Structured Outputs with `strict: true`. Otherwise a recorded pipeline replays and the studio badges itself "Simulated". |
+| AI issue generation | **Real.** Every live issue was written by `gpt-4.1` against a strict JSON schema, streamed, Structured Outputs with `strict: true`. Each records its model in the IPFS metadata the treasury points at, so the claim is checkable. A clone without `OPENAI_API_KEY` replays a recorded pipeline and the studio badges itself "Simulated". |
 | Reward claim flow | **Real.** Attested by `/api/attest`, submitted by the reader, settled on GIWA Sepolia. |
 | Proof of read | **Real, and server-measured.** Elapsed time comes from the server's clock via a signed session; scroll depth and heartbeat cadence are enforced. It proves time and scrolling, not comprehension. |
 | up.id identity | **Real, and not ours.** Gated on the live ecosystem registry, so a wallet with no genuine `up.id` cannot claim, including our own deployer. |

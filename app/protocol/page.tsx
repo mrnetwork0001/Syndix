@@ -508,14 +508,19 @@ export default async function ProtocolPage(): Promise<ReactElement> {
             </thead>
             <tbody>
               {[
-                ["Smart contracts", "Real. Deployed, 33 passing tests including a fuzzed solvency invariant.", "positive"],
-                ["Reader reward claim", "Real. Attested, submitted and settled on GIWA Sepolia.", "positive"],
+                ["Smart contracts", "Real. Deployed and verified, 83 passing Foundry tests including three fuzzed invariants.", "positive"],
+                ["Reader reward claim", "Real. Attested by /api/attest, submitted by the reader, settled on GIWA Sepolia.", "positive"],
+                ["Proof of read", "Real, and measured by the server. A signed session is stamped with the server clock, heartbeats carry scroll depth, and beats arriving faster than real time are refused - dwell is never client-reported. It proves time and scrolling, not comprehension.", "positive"],
+                ["up.id identity", "Real, and not ours. Claims gate on the live Upbit Web3 Names registry, so a wallet without a genuine up.id cannot claim - including our own deployer.", "positive"],
                 ["GIWA chain reads", "Real. This page and the ingestion agent query live state.", "positive"],
-                ["AI issue generation", "Real when OPENAI_API_KEY is set; otherwise a recorded pipeline replays and the studio says so.", "caution"],
-                ["x402 endpoint", "Real protocol. Settlement is verified onchain now that a treasury exists.", "positive"],
                 ["Issue content", "Real. The feed reads the treasury's article index and fetches each body from IPFS. No issue is bundled in the app.", "positive"],
-                ["Gasless via ERC-4337", "Paymaster deployed, staked, funded and tested - but not in the claim path: GIWA has no smart-account factory and no bundler yet.", "caution"],
-                ["IPFS pinning", "Real. Generated issues are pinned to IPFS via Pinata and publishing is blocked if pinning fails.", "positive"],
+                ["IPFS pinning", "Real. Issues are pinned via Pinata and publishing is blocked if pinning fails, so nothing is indexed pointing at nothing.", "positive"],
+                ["Analytics time series", "Real. Daily buckets reconstructed from RewardClaimed and ArticlePublished logs. Empty days render empty rather than interpolated.", "positive"],
+                ["AI issue generation", "Real. Every live issue was written by gpt-4.1 against a strict JSON schema, seeded with head state read at generation time - each one records its model in the IPFS metadata the treasury points at, so the claim is checkable rather than asserted.", "positive"],
+                ["x402 endpoint", "Real protocol. Settlement is verified onchain now that a treasury exists.", "positive"],
+                ["Autonomous publishing", "Not built. Writing is unattended, but publishing needs an owner signature and there is no scheduler. SyndixPublisher, the guard that closes this safely, is written and tested with 21 tests but not deployed.", "caution"],
+                ["Gasless via ERC-4337", "Paymaster deployed, staked, funded and tested - but not in the claim path: GIWA has no smart-account factory and no bundler yet, so readers pay their own gas.", "caution"],
+                ["KRW denomination", "Not deployed. SyndixStableTreasury is written and tested against a mock; GIWA's KRW stablecoin does not exist yet.", "caution"],
               ].map(([component, status, tone]) => (
                 <tr key={component} className="border-b border-hairline last:border-b-0">
                   <td className="px-5 py-3 align-top font-medium text-ink">
