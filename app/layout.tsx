@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/shell/header";
 import { NetworkGuard } from "@/components/shell/network-guard";
+import { fetchRates, setAmbientRates } from "@/lib/prices";
 import { Footer } from "@/components/shell/footer";
 
 const geistSans = Geist({
@@ -62,11 +63,16 @@ export const viewport: Viewport = {
   colorScheme: "dark",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Fetched here so the server render and the client provider share one
+  // snapshot; formatters on both sides then produce identical strings.
+  const rates = await fetchRates();
+  setAmbientRates(rates);
+
   return (
     <html
       lang="en"
@@ -74,7 +80,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <BackdropLayer />
-        <Providers>
+        <Providers rates={rates}>
           <a
             href="#content"
             className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-[10px] focus:bg-accent focus:px-3 focus:py-2 focus:text-[13px] focus:font-medium focus:text-white"

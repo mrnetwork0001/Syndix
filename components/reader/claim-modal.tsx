@@ -288,6 +288,11 @@ export function ClaimModal({
   const [txHash, setTxHash] = useState<string | null>(null);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [onchainName, setOnchainName] = useState<string | null>(null);
+  /** Real settlement facts. Null while simulating, so the UI can tell them apart. */
+  const [settled, setSettled] = useState<{
+    preconfirmMs: number;
+    blockNumber: string;
+  } | null>(null);
   const { writeContractAsync } = useWriteContract();
 
   const normalized = normalizeUpId(nameInput);
@@ -423,6 +428,7 @@ export function ClaimModal({
 
       setStage("sponsoring");
 
+      const submittedAt = Date.now();
       const hash = await writeContractAsync({
         address: SYNDIX_CONTRACTS.treasury,
         abi: syndixTreasuryAbi,
@@ -446,6 +452,10 @@ export function ClaimModal({
         throw new Error("The claim transaction reverted on GIWA.");
       }
 
+      setSettled({
+        preconfirmMs: Date.now() - submittedAt,
+        blockNumber: receipt.blockNumber.toString(),
+      });
       setStage("preconfirmed");
       setStage("sealed");
       onClaimed(hash);
@@ -709,7 +719,7 @@ export function ClaimModal({
                     )}
                     <span className="text-[12.5px] text-ink-muted">
                       {rank(stage) >= rank("preconfirmed")
-                        ? `Preconfirmed in ${PRECONFIRM_MS}ms`
+                        ? `Preconfirmed in ${settled ? settled.preconfirmMs : PRECONFIRM_MS}ms`
                         : "Awaiting preconfirmation…"}
                     </span>
                   </div>
@@ -721,7 +731,7 @@ export function ClaimModal({
                     )}
                     <span className="text-[12.5px] text-ink-muted">
                       {stage === "sealed"
-                        ? `Sealed in block #${formatInt(settledBlock)}`
+                        ? `Sealed in block #${settled ? formatInt(Number(settled.blockNumber)) : formatInt(settledBlock)}`
                         : "Awaiting sealed block…"}
                     </span>
                   </div>
@@ -734,7 +744,13 @@ export function ClaimModal({
                     <span className="text-[11px] tracking-[0.14em] text-ink-faint uppercase">
                       Tx hash
                     </span>
-                    <Badge tone="caution">Simulated</Badge>
+                    {settled ? (
+                      <Badge tone="positive" dot>
+                        On-chain
+                      </Badge>
+                    ) : (
+                      <Badge tone="caution">Simulated</Badge>
+                    )}
                   </div>
                   <div className="mt-2 flex items-center gap-1">
                     <Mono className="truncate text-[11px]">{txHash}</Mono>
@@ -750,8 +766,9 @@ export function ClaimModal({
                     <ArrowUpRight className="size-3" strokeWidth={2} />
                   </a>
                   <p className="mt-1.5 text-[11px] leading-relaxed text-ink-faint">
-                    This hash was generated locally and never broadcast — the explorer
-                    will not find it.
+                    {settled
+                      ? "Broadcast from your wallet and included on GIWA Sepolia. The explorer link above resolves."
+                      : "This hash was generated locally and never broadcast — the explorer will not find it."}
                   </p>
                 </div>
               ) : null}

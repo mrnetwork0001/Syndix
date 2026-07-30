@@ -12,9 +12,12 @@ import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Mono } from "@/components/ui/mono";
 
 export function TreasuryWidget({
+  live = false,
   stats,
 }: {
   stats: ProtocolStats;
+  /** True when `stats` came from the contract rather than the dataset. */
+  live?: boolean;
 }): ReactElement {
   const { unreservedWei, reservedWei, reservedShare } = useMemo(() => {
     const balance = BigInt(stats.treasuryBalanceWei);
@@ -37,7 +40,15 @@ export function TreasuryWidget({
         title="Treasury"
         description="SyndixTreasury balance, split between what the owner can move and what readers are owed."
         icon={Wallet}
-        action={<Badge tone="caution">Simulated</Badge>}
+        action={
+          live ? (
+            <Badge tone="positive" dot>
+              Live
+            </Badge>
+          ) : (
+            <Badge tone="caution">Simulated</Badge>
+          )
+        }
       />
 
       <div className="px-5 pt-4">

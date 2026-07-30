@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bot } from "lucide-react";
 import { ISSUES } from "@/lib/data/issues";
 import { PROTOCOL_STATS } from "@/lib/data/protocol";
+import { readProtocolChainStats } from "@/lib/chain-stats";
 import { Badge } from "@/components/ui/badge";
 import { PipelineControls } from "@/components/studio/pipeline-controls";
 import { TreasuryWidget } from "@/components/studio/treasury-widget";
@@ -13,7 +14,20 @@ export const metadata: Metadata = {
     "Watch the Syndix ingestion agent scan GIWA Sepolia, draft an issue, illustrate it, and publish — with the treasury and x402 machine-payment surfaces alongside.",
 };
 
-export default function StudioPage() {
+export default async function StudioPage() {
+  const chain = await readProtocolChainStats();
+  const live = chain.live ? chain : null;
+  const treasuryStats = live
+    ? {
+        ...PROTOCOL_STATS,
+        totalProtocolVolumeWei: live.totalProtocolVolumeWei.toString(),
+        totalRewardDistributedWei: live.totalRewardDistributedWei.toString(),
+        treasuryBalanceWei: live.treasuryBalanceWei.toString(),
+        reservedRewardsWei: live.reservedRewardsWei.toString(),
+        uniqueReaders: live.uniqueReaders,
+        issuesPublished: live.articleCount,
+      }
+    : PROTOCOL_STATS;
   return (
     <main className="mx-auto w-full max-w-[1440px] px-5 py-10 sm:px-6 lg:px-8">
       <header className="max-w-2xl">
@@ -22,7 +36,7 @@ export default function StudioPage() {
             <Bot className="size-3.5" strokeWidth={1.9} />
             Newsroom control
           </span>
-          <Badge tone="caution">Simulated unless labelled live</Badge>
+          <Badge tone="positive" dot>Live on GIWA Sepolia</Badge>
         </div>
         <h1 className="text-gradient mt-3 text-[32px] leading-[1.1] font-semibold tracking-[-0.03em] sm:text-[38px]">
           Agent Studio
@@ -42,7 +56,7 @@ export default function StudioPage() {
         />
 
         <aside className="flex min-w-0 flex-col gap-5">
-          <TreasuryWidget stats={PROTOCOL_STATS} />
+          <TreasuryWidget stats={treasuryStats} live={Boolean(live)} />
           <X402Panel />
         </aside>
       </div>

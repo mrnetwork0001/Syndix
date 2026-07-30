@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { formatEther } from "viem";
+import { getAmbientRates } from "./prices";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -10,12 +11,8 @@ export function cn(...inputs: ClassValue[]) {
 /*  Money                                                              */
 /* ------------------------------------------------------------------ */
 
-/**
- * Demo FX rates. A production deployment reads ETH/KRW from the Upbit Oracle
- * on GIWA rather than hard-coding — see docs.giwa.io/giwa-ecosystem/upbit-oracle.
- */
-export const ETH_USD = 3200;
-export const USD_KRW = 1380;
+/** @deprecated Read `getAmbientRates()` instead — these were static guesses. */
+export const ETH_USD_FALLBACK = 1911;
 
 export function weiToEth(wei: string | bigint): number {
   return Number(formatEther(typeof wei === "string" ? BigInt(wei) : wei));
@@ -29,7 +26,11 @@ export function formatEth(wei: string | bigint, dp = 4): string {
 }
 
 export function weiToUsd(wei: string | bigint): number {
-  return weiToEth(wei) * ETH_USD;
+  return weiToEth(wei) * getAmbientRates().ethUsd;
+}
+
+export function weiToKrw(wei: string | bigint): number {
+  return weiToEth(wei) * getAmbientRates().ethKrw;
 }
 
 export function formatUsd(wei: string | bigint): string {
@@ -43,7 +44,9 @@ export function formatUsd(wei: string | bigint): string {
 }
 
 export function formatKrw(wei: string | bigint): string {
-  const krw = weiToUsd(wei) * USD_KRW;
+  const krw = weiToKrw(wei);
+  // Sub-won amounts round to 0 and read as broken; show one decimal instead.
+  if (krw > 0 && krw < 1) return `₩${krw.toFixed(2)}`;
   return `₩${Math.round(krw).toLocaleString("ko-KR")}`;
 }
 
