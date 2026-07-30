@@ -15,8 +15,22 @@ const NAV = [
   { href: "/protocol", label: "Protocol", matches: ["/protocol"] },
 ] as const;
 
+/**
+ * Routes where a wallet is actually used, and so where the header carries the
+ * connect button and network badge.
+ *
+ * The feed and /protocol are read-only, so wallet chrome there is noise that
+ * implies a connection is needed to browse. Claiming happens on an issue page
+ * and publishing in the studio — and the studio has no connect affordance of
+ * its own, so hiding the header control there would leave no way to connect at
+ * all. The claim modal does have its own, which is why /issue would survive
+ * either choice.
+ */
+const WALLET_ROUTES = ["/issue", "/studio"] as const;
+
 export function Header(): ReactElement {
   const pathname = usePathname();
+  const showWallet = WALLET_ROUTES.some((route) => pathname.startsWith(route));
 
   return (
     <header className="glass sticky top-0 z-50 border-x-0! border-t-0!">
@@ -37,7 +51,8 @@ export function Header(): ReactElement {
           className="hidden h-4 w-px shrink-0 bg-hairline-strong sm:block"
         />
 
-        <nav className="flex min-w-0 items-center gap-0.5">
+        {/* ml-auto pushes the nav and everything after it to the right edge. */}
+        <nav className="ml-auto flex min-w-0 items-center gap-0.5">
           {NAV.map((item) => {
             const active = item.matches.some((m) =>
               m === "/" ? pathname === "/" : pathname.startsWith(m),
@@ -74,10 +89,12 @@ export function Header(): ReactElement {
           </a>
         </nav>
 
-        <div className="ml-auto flex shrink-0 items-center gap-2">
-          <NetworkBadge />
-          <ConnectButton />
-        </div>
+        {showWallet ? (
+          <div className="flex shrink-0 items-center gap-2">
+            <NetworkBadge />
+            <ConnectButton />
+          </div>
+        ) : null}
       </div>
     </header>
   );

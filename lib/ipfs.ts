@@ -13,8 +13,16 @@
 
 const PINATA_JSON_ENDPOINT = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
 
-/** Public gateway used only for display/verification links. */
-export const IPFS_GATEWAY = "https://gateway.pinata.cloud/ipfs";
+/**
+ * Read gateway.
+ *
+ * Deliberately not Pinata's: their public gateway rate-limits CIDs that are not
+ * pinned to the calling account, returning 429 for both real and missing
+ * content — which makes it impossible to tell "busy" from "does not exist".
+ * ipfs.io serves any CID and answers 200 vs 5xx, so a failure is diagnosable.
+ * Pinata is still the write path in `pinIssueMetadata`.
+ */
+export const IPFS_GATEWAY = "https://ipfs.io/ipfs";
 
 export function hasPinataKey(): boolean {
   return Boolean(process.env.PINATA_JWT?.trim());
