@@ -180,9 +180,10 @@ registration) and lands in the shared ERC-721 named "Upbit Web3 Names" (UPNAME).
 
 So Syndix reads it and cannot write it. `UpIdReaderRegistry` is an adapter whose whole
 content is `balanceOf(reader) > 0`. The consequence is deliberate and worth stating
-plainly: **our own deployer wallet cannot claim a reader reward**, because it holds no
-genuine `up.id`. A protocol that can issue itself the credential it checks has not
-implemented a sybil gate.
+plainly: **Syndix cannot issue the credential it checks.** Our own operator wallet holds
+`syndix.up.id`, and it obtained that name the same way any reader does - through GIWA's
+Dojang flow, from a registry we do not control and cannot write to. A protocol that could
+mint itself the credential it gates on has not implemented a sybil gate.
 
 The label is a separate problem with a separate answer. tokenId is `keccak256(label)` - the ENS
 labelhash, not the namehash - which cannot be inverted, and the registry is not `ERC721Enumerable` (`tokenOfOwnerByIndex`
@@ -472,7 +473,7 @@ Stated plainly, because a grant reviewer should not have to guess:
 | AI issue generation | **Real.** Every live issue was written by `gpt-4.1` against a strict JSON schema, streamed, Structured Outputs with `strict: true`. Each records its model in the IPFS metadata the treasury points at, so the claim is checkable. A clone without `OPENAI_API_KEY` replays a recorded pipeline and the studio badges itself "Simulated". |
 | Reward claim flow | **Real.** Attested by `/api/attest`, submitted by the reader, settled on GIWA Sepolia. |
 | Proof of read | **Real, and server-measured.** Elapsed time comes from the server's clock via a signed session; scroll depth and heartbeat cadence are enforced. It proves time and scrolling, not comprehension. |
-| up.id identity | **Real, and not ours.** Gated on the live ecosystem registry, so a wallet with no genuine `up.id` cannot claim, including our own deployer. |
+| up.id identity | **Real, and not ours.** Gated on the live ecosystem registry: a wallet with no genuine `up.id` cannot claim, and Syndix has no power to issue one to anybody, itself included. |
 | IPFS pinning | **Real.** Pinned through Pinata on publish; publishing aborts if pinning fails, so no article is indexed with an unresolvable CID. |
 | Analytics time series | **Real.** Daily buckets reconstructed from `RewardClaimed` and `ArticlePublished` logs. Empty days render empty rather than interpolated. |
 | x402 endpoint | **Real protocol, real verification when deployed.** With a treasury set it verifies settlement onchain; without one it accepts a well-formed hash and returns `verification: "accepted-unverified"`. |

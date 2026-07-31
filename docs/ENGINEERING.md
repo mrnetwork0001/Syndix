@@ -147,9 +147,11 @@ MockUpIdRegistry    0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d  (superseded, sti
 ```
 
 `SyndixTreasury.readerRegistry` is `UpIdReaderRegistry`, so claims gate on the **real**
-ecosystem registry. Consequence: the deployer wallet and any mock-named wallet can no
-longer claim - they hold no genuine `up.id`. Get one at `sepolia-playground.giwa.io`.
-Reverting is one `setReaderRegistry(0xA82EDb…)` call.
+ecosystem registry. Consequence: a wallet holding only a mock-issued name can no longer
+claim; only a genuine `up.id` counts. The operator wallet holds `syndix.up.id` and the
+demo wallet holds `gsucoin.up.id`, both minted through GIWA's own flow at
+`sepolia-playground.giwa.io` - which is the only way anyone, including us, can get one.
+Reverting to the mock is one `setReaderRegistry(0xA82EDb…)` call.
 
 Issues are published with funded pools and real reader claims settle. **The app
 bundles no article content** - `lib/onchain-issues.ts` reads the treasury index

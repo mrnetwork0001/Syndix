@@ -518,7 +518,7 @@ export default async function ProtocolPage(): Promise<ReactElement> {
                 ["Smart contracts", "Real. Deployed and verified, 101 passing Foundry tests including three fuzzed invariants.", "positive"],
                 ["Reader reward claim", "Real. Attested by /api/attest, submitted by the reader, settled on GIWA Sepolia.", "positive"],
                 ["Proof of read", "Real, and measured by the server. A signed session is stamped with the server clock, heartbeats carry scroll depth, and beats arriving faster than real time are refused - dwell is never client-reported. It proves time and scrolling, not comprehension.", "positive"],
-                ["up.id identity", "Real, and not ours. Claims gate on the live Upbit Web3 Names registry, so a wallet without a genuine up.id cannot claim - including our own deployer.", "positive"],
+                ["up.id identity", "Real, and not ours. Claims gate on the live Upbit Web3 Names registry, so a wallet without a genuine up.id cannot claim - and Syndix has no power to issue one to anybody, itself included.", "positive"],
                 ["GIWA chain reads", "Real. This page and the ingestion agent query live state.", "positive"],
                 ["Issue content", "Real. The feed reads the treasury's article index and fetches each body from IPFS. No issue is bundled in the app.", "positive"],
                 ["IPFS pinning", "Real. Issues are pinned via Pinata and publishing is blocked if pinning fails, so nothing is indexed pointing at nothing.", "positive"],

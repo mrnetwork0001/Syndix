@@ -138,9 +138,10 @@ export default async function TechDoc(): Promise<ReactElement> {
           <p>
             On L1 that ratio inverts and the product cannot exist. The sybil
             problem is solved by an asset we cannot issue: a{" "}
-            <Mono className="text-[11px]">up.id</Mono> is minted by GIWA, so our
-            own deployer wallet cannot claim a reward. A protocol that can issue
-            itself the credential it checks has not built a gate.
+            <Mono className="text-[11px]">up.id</Mono> is minted by GIWA through
+            Dojang attestation, from a registry Syndix reads and cannot write. We
+            hold one the same way any reader does. A protocol that can mint itself
+            the credential it gates on has not built a gate.
           </p>
         </Section>
 

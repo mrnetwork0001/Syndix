@@ -223,13 +223,13 @@ footer(s, nxt() + 1)
 s = slide(prs)
 eyebrow(s, "The second blocker: sybil resistance")
 accent_bar(s)
-title(s, "We cannot claim our own reward.", y=Inches(1.35), size=38)
+title(s, "We cannot issue the\ncredential we check.", y=Inches(1.35), size=38)
 box(s, M, Inches(2.75), Inches(11.2), Inches(2.2),
     "The gate is Upbit Web3 Names — soul-bound, one per verified wallet, issued by GIWA "
     "through Dojang attestation. Syndix reads it and cannot write it.\n\n"
-    "Our own deployer wallet holds no genuine up.id, so the treasury refuses its claim. "
-    "That is the point: a protocol that can issue itself the credential it checks has not "
-    "built a gate.",
+    "We hold syndix.up.id, obtained the same way any reader does. What we cannot do is "
+    "mint one - for a reader, or for ourselves. A protocol that can issue itself the "
+    "credential it gates on has not built a gate.",
     size=17, color=INK_MUTED, spacing=1.45)
 rect(s, M, Inches(5.15), Inches(11.2), Inches(1.25), fill=ELEVATED, line=ACCENT)
 box(s, M + Inches(0.4), Inches(5.42), Inches(10.4), Inches(0.8),
