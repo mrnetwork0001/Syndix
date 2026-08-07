@@ -88,6 +88,46 @@ function utcDay(timestampSeconds: number): string {
 const CACHE_TTL_MS = 5 * 60 * 1000;
 let cached: { at: number; result: IndexResult } | null = null;
 
+/** A claim or publish, kept with the timestamp so blocks are fetched once ever. */
+interface RawEvent {
+  /** `txHash:logIndex` - stable across a rescan, so a merge cannot double-count. */
+  key: string;
+  blockNumber: bigint;
+  seconds: number;
+  amount: bigint;
+  reader: string;
+}
+
+/**
+ * Events seen so far, so a later scan only has to cover new blocks.
+ *
+ * A full window is ~800k blocks and eighteen getLogs calls at roughly seven
+ * seconds each. Almost all of that is re-reading blocks that have not changed
+ * since the last scan, which is pure waste on a chain producing one block a
+ * second.
+ */
+let eventCache: {
+  claims: RawEvent[];
+  publishes: RawEvent[];
+  scannedTo: bigint;
+} | null = null;
+
+/**
+ * Blocks re-read on every incremental scan.
+ *
+ * Resuming from exactly where we stopped assumes the tip never changes, which
+ * is not true of any chain. Overlapping by a few hundred blocks means a shallow
+ * reorg is picked up rather than baked in, and the `key` dedupe makes
+ * re-reading free.
+ */
+const REORG_REWIND = 300n;
+
+/** Clears the incremental state. Exposed for tests and for after a publish. */
+export function clearIndexerCache(): void {
+  cached = null;
+  eventCache = null;
+}
+
 export async function indexProtocolSeries(): Promise<IndexResult> {
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.result;
   const result = await computeProtocolSeries();
@@ -114,8 +154,31 @@ async function computeProtocolSeries(): Promise<IndexResult> {
     const fromBlock =
       windowStart > TREASURY_DEPLOY_BLOCK ? windowStart : TREASURY_DEPLOY_BLOCK;
 
+    /**
+     * Resume from the last scan when we safely can, otherwise scan the window.
+     *
+     * "Safely" means the cached state still covers the bottom of the current
+     * window - if the window has slid past what we hold, the missing blocks
+     * were never read and resuming would silently under-report. Falling back to
+     * a full scan is always correct, just slower, so every uncertain case takes
+     * it.
+     */
+    const resumable =
+      eventCache !== null &&
+      eventCache.scannedTo >= fromBlock &&
+      eventCache.scannedTo <= head;
+
+    const scanFrom = resumable
+      ? (eventCache!.scannedTo - REORG_REWIND > fromBlock
+          ? eventCache!.scannedTo - REORG_REWIND
+          : fromBlock)
+      : fromBlock;
+
+    const carriedClaims = resumable ? eventCache!.claims : [];
+    const carriedPublishes = resumable ? eventCache!.publishes : [];
+
     const ranges: { start: bigint; end: bigint }[] = [];
-    for (let start = fromBlock; start <= head; start += LOG_CHUNK) {
+    for (let start = scanFrom; start <= head; start += LOG_CHUNK) {
       const end = start + LOG_CHUNK - 1n > head ? head : start + LOG_CHUNK - 1n;
       ranges.push({ start, end });
     }
@@ -155,20 +218,30 @@ async function computeProtocolSeries(): Promise<IndexResult> {
       perRange.push(...settled);
     }
 
-    const claims = perRange.flatMap((r) =>
+    const scannedClaims = perRange.flatMap((r) =>
       r.claimLogs.map((log) => ({
+        key: `${log.transactionHash}:${log.logIndex}`,
         blockNumber: log.blockNumber,
         amount: log.args.amount ?? 0n,
         reader: log.args.reader ?? "0x",
       })),
     );
-    const publishes = perRange.flatMap((r) =>
-      r.publishLogs.map((log) => ({ blockNumber: log.blockNumber })),
+    const scannedPublishes = perRange.flatMap((r) =>
+      r.publishLogs.map((log) => ({
+        key: `${log.transactionHash}:${log.logIndex}`,
+        blockNumber: log.blockNumber,
+        amount: 0n,
+        // Publishes carry no reader; the field exists only so both event kinds
+        // share one shape and one merge path.
+        reader: "0x" as string,
+      })),
     );
 
     // Only fetch timestamps for blocks that actually produced an event.
     const blocks = [
-      ...new Set([...claims, ...publishes].map((e) => e.blockNumber)),
+      ...new Set(
+        [...scannedClaims, ...scannedPublishes].map((e) => e.blockNumber),
+      ),
     ];
     const fetched = await Promise.all(
       blocks.map(async (blockNumber) => {
@@ -177,6 +250,30 @@ async function computeProtocolSeries(): Promise<IndexResult> {
       }),
     );
     const timestamps = new Map<bigint, number>(fetched);
+
+    // Stamp each event so a later scan never re-reads these blocks.
+    const stamp = (e: {
+      key: string;
+      blockNumber: bigint;
+      amount: bigint;
+      reader: string;
+    }): RawEvent => ({
+      ...e,
+      seconds: timestamps.get(e.blockNumber) ?? 0,
+    });
+
+    // Merge with anything already known, dedupe by log identity so the reorg
+    // overlap cannot double-count, and drop what has fallen out of the window.
+    const merge = (prior: RawEvent[], fresh: RawEvent[]): RawEvent[] => {
+      const byKey = new Map<string, RawEvent>();
+      for (const e of prior) if (e.blockNumber >= fromBlock) byKey.set(e.key, e);
+      for (const e of fresh) byKey.set(e.key, e);
+      return [...byKey.values()];
+    };
+
+    const claims = merge(carriedClaims, scannedClaims.map(stamp));
+    const publishes = merge(carriedPublishes, scannedPublishes.map(stamp));
+    eventCache = { claims, publishes, scannedTo: head };
 
     // Seed every day in the window so the chart has no gaps.
     const buckets = new Map<string, DailyPoint>();
@@ -196,9 +293,8 @@ async function computeProtocolSeries(): Promise<IndexResult> {
     const walletsPerDay = new Map<string, Set<string>>();
 
     for (const claim of claims) {
-      const seconds = timestamps.get(claim.blockNumber);
-      if (seconds === undefined) continue;
-      const date = utcDay(seconds);
+      if (!claim.seconds) continue;
+      const date = utcDay(claim.seconds);
       const bucket = buckets.get(date);
       if (!bucket) continue;
       bucket.claims += 1;
