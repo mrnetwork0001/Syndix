@@ -5,6 +5,7 @@ import {
   X402_PAYMENT_HEADER,
   X402_PRICE_WEI,
   X402_VERSION,
+  X402_SCHEME,
   buildX402Challenge,
   verifyX402Payment,
 } from "@/lib/x402";
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
       headers: {
         // WWW-Authenticate lets a generic HTTP client discover the scheme
         // without parsing the body.
-        "WWW-Authenticate": `Payment scheme="exact", network="eip155:${GIWA_SEPOLIA_ID}", amount="${X402_PRICE_WEI}"`,
+        "WWW-Authenticate": `Payment scheme="${X402_SCHEME}", network="eip155:${GIWA_SEPOLIA_ID}", amount="${X402_PRICE_WEI}"`,
         "Cache-Control": "no-store",
       },
     });

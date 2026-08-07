@@ -174,10 +174,16 @@ export interface AgentRun {
 /* ------------------------------------------------------------------ */
 
 export interface X402Requirement {
-  scheme: "exact";
+  /**
+   * How payment is made. Not one of x402's built-in scheme names - see
+   * X402_SCHEME in lib/x402.ts for why `exact` would be a false advertisement
+   * here.
+   */
+  scheme: string;
   network: string;
   /** Wei, decimal string. */
   maxAmountRequired: string;
+  /** Absolute URL of the paid resource, not a path. */
   resource: string;
   description: string;
   mimeType: string;

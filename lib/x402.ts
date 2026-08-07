@@ -29,6 +29,39 @@ export const X402_PRICE_WEI = "6250000000000" as const;
 
 export const X402_PAYMENT_HEADER = "x-payment";
 
+/**
+ * Scheme identifier. Deliberately NOT "exact".
+ *
+ * x402's `exact` scheme means the client signs an EIP-3009
+ * `transferWithAuthorization` (or a Permit2 equivalent) and the server settles
+ * it. That is defined over ERC-20, and native ETH has no EIP-3009 - there is
+ * nothing for a compliant client to sign. Advertising `exact` while expecting a
+ * transaction hash would send a standard x402 client off to build a signature
+ * against the zero address, and fail.
+ *
+ * What Syndix actually implements is simpler: pay the invoice on chain, then
+ * present the transaction hash, which the server verifies against the receipt.
+ * That deserves its own name rather than a borrowed one. ERC-20 rails do not
+ * meaningfully exist on GIWA Sepolia yet; when they do, `exact` becomes
+ * available and this can be offered alongside it.
+ */
+export const X402_SCHEME = "giwa-native-transfer" as const;
+
+/**
+ * Absolute base for the `resource` field. The spec identifies a resource by
+ * URL, not by path - a relative value cannot be resolved by a client that
+ * followed the 402 from somewhere else.
+ */
+function siteOrigin(): string {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  return (configured || "http://localhost:3000").replace(/\/+$/, "");
+}
+
+/** Turns a path into the absolute URL the challenge should advertise. */
+export function x402ResourceUrl(path: string): string {
+  return path.startsWith("http") ? path : `${siteOrigin()}${path}`;
+}
+
 /** Where an agent should send payment. Falls back to the treasury deployment. */
 export function x402PayTo(): string {
   const configured = process.env.NEXT_PUBLIC_X402_PAY_TO;
@@ -38,16 +71,18 @@ export function x402PayTo(): string {
 
 export function buildX402Challenge(resource: string): X402Challenge {
   const requirement: X402Requirement = {
-    scheme: "exact",
+    scheme: X402_SCHEME,
     network: `eip155:${GIWA_SEPOLIA_ID}`,
     maxAmountRequired: X402_PRICE_WEI,
-    resource,
+    resource: x402ResourceUrl(resource),
     description:
       "Single-request access to the Syndix raw alpha feed: structured issue JSON with source signals, engagement scoring, and reward economics.",
     mimeType: "application/json",
     payTo: x402PayTo(),
     maxTimeoutSeconds: 120,
-    // Native ETH on GIWA is represented by the zero address, per x402 convention.
+    // Native ETH, by the usual zero-address convention. Paired with
+    // X402_SCHEME rather than `exact`, since ETH cannot carry an EIP-3009
+    // authorization - see the note on X402_SCHEME.
     asset: ZERO_ADDRESS,
     extra: {
       chainName: "GIWA Sepolia",
@@ -56,6 +91,9 @@ export function buildX402Challenge(resource: string): X402Challenge {
       // paying agent is unblocked in ~200ms rather than a full block.
       preconfirmationRpc: "https://sepolia-rpc-flashblocks.giwa.io",
       settlementHeader: X402_PAYMENT_HEADER,
+      // Spelled out so an agent does not have to infer it from the scheme name.
+      settlementFormat:
+        "Send maxAmountRequired wei of native ETH to payTo, then retry with the 32-byte transaction hash in the x-payment header.",
       docs: "https://docs.giwa.io",
     },
   };
