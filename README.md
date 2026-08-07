@@ -484,6 +484,35 @@ Stated plainly, because a grant reviewer should not have to guess:
 
 ---
 
+## The attention ledger
+
+Every claim emits `RewardClaimed(articleId, reader, identity, amount)`, so the record of
+who read what already existed on chain and had simply never been read back. Two views
+fall out of it, and they are the same data from opposite sides. Neither required a
+contract change.
+
+**A reader's record** - `GET /api/reader/:address`. Which issues a wallet has finished,
+what it earned, and the transaction for each. Because claims are gated on a soul-bound
+`up.id` and capped at one per article, this is a history that **cannot be inflated by
+generating addresses** - which is what separates it from any self-reported profile. It is
+public and unauthenticated on purpose: the record belongs to the reader, and another
+application should be able to read it without asking us.
+
+**A sponsor's receipt** - `GET /api/article/:id/receipt`. How many distinct verified
+humans finished an issue, what they were paid, and the dwell time certified for each.
+Advertisers normally accept an impression count on trust, which is why ad fraud is a
+multi-billion-dollar industry; here the count comes from settled transactions and anyone
+can recompute it from the contract.
+
+Dwell deserves its own caveat, and the endpoint carries it. The contract verifies dwell
+but does not store it, so it is not in the event - it is however an argument to
+`claimReaderReward`, and therefore decodable from the claim's calldata. That makes it
+publicly checkable, but it is the figure the attester signed rather than an independent
+measurement: evidence that the server judged a reader to have spent that long, not proof
+that they did.
+
+---
+
 ## Roadmap
 
 1. **Deploy `SyndixPublisher`** and schedule the pipeline, making the newsroom genuinely
@@ -497,6 +526,12 @@ Stated plainly, because a grant reviewer should not have to guess:
    from a subsidy into revenue. Then `publishFromBalance` on the treasury, so a
    sponsor's deposit is bound to an article pool by the contract rather than by
    the operator recycling it.
+6. **Correction chains.** Issues are immutable, so a correction has to be a new issue -
+   linking the two with a `supersedes` field in the pinned metadata makes that chain
+   auditable. Needs no contract change, since the link lives in the article JSON.
+7. **Reader-commissioned coverage.** Readers pool ETH to fund an issue on a topic,
+   inverting the sponsor model. A new contract alongside the treasury, in the same shape
+   as `SyndixSponsorship` - the deployed treasury stays untouched.
 
 ---
 
