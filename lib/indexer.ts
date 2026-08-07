@@ -33,7 +33,23 @@ const BLOCKS_PER_DAY = 86_400n;
 export const INDEX_WINDOW_DAYS = 14;
 
 /** Chunk size for getLogs. The public RPC rejects very wide ranges. */
+/**
+ * Blocks per eth_getLogs call.
+ *
+ * The documented ceiling is 100,000, but measured against GIWA's RPC the
+ * practical limit is far lower: 10k returns in 1.7s, 20k in 3.6s, 45k in 7.0s,
+ * and 90k does not return at all - it 503s with "no backend is currently
+ * healthy to serve traffic" after a hundred seconds. Raising this toward the
+ * documented ceiling makes the scan fail, not finish faster.
+ */
 const LOG_CHUNK = 45_000n;
+
+/**
+ * Ranges scanned at once. A public RPC rate-limits a wide fan-out, and one
+ * rejected chunk fails the entire scan - so trade a little wall-clock for
+ * finishing at all.
+ */
+const MAX_CONCURRENCY = 4;
 
 /**
  * Block SyndixTreasury was deployed at. Scanning below this is pure waste -
@@ -89,7 +105,7 @@ async function computeProtocolSeries(): Promise<IndexResult> {
   try {
     const client = createPublicClient({
       chain: giwaSepolia,
-      transport: http(GIWA_RPC_HTTP, { timeout: 15_000, retryCount: 1 }),
+      transport: http(GIWA_RPC_HTTP, { timeout: 25_000, retryCount: 2 }),
     });
 
     const head = await client.getBlockNumber();
@@ -104,26 +120,40 @@ async function computeProtocolSeries(): Promise<IndexResult> {
       ranges.push({ start, end });
     }
 
-    // Chunks are independent, so fan them out rather than walking them.
-    const perRange = await Promise.all(
-      ranges.map(async ({ start, end }) => {
-        const [claimLogs, publishLogs] = await Promise.all([
-          client.getLogs({
-            address: SYNDIX_CONTRACTS.treasury,
-            event: REWARD_CLAIMED,
-            fromBlock: start,
-            toBlock: end,
-          }),
-          client.getLogs({
-            address: SYNDIX_CONTRACTS.treasury,
-            event: ARTICLE_PUBLISHED,
-            fromBlock: start,
-            toBlock: end,
-          }),
-        ]);
-        return { claimLogs, publishLogs };
-      }),
-    );
+    /**
+     * Chunks are independent, but a full fan-out is what broke this: 36
+     * simultaneous getLogs against a public RPC gets throttled, and one
+     * rejection takes the scan with it. Walk them a few at a time instead.
+     *
+     * Deliberately still all-or-nothing. A partially scanned window would
+     * render missing days as days with no claims, which is a wrong number
+     * rather than a missing one - the caller is better served by an honest
+     * failure it can label.
+     */
+    const scanRange = async ({ start, end }: { start: bigint; end: bigint }) => {
+      const [claimLogs, publishLogs] = await Promise.all([
+        client.getLogs({
+          address: SYNDIX_CONTRACTS.treasury,
+          event: REWARD_CLAIMED,
+          fromBlock: start,
+          toBlock: end,
+        }),
+        client.getLogs({
+          address: SYNDIX_CONTRACTS.treasury,
+          event: ARTICLE_PUBLISHED,
+          fromBlock: start,
+          toBlock: end,
+        }),
+      ]);
+      return { claimLogs, publishLogs };
+    };
+
+    const perRange: Awaited<ReturnType<typeof scanRange>>[] = [];
+    for (let i = 0; i < ranges.length; i += MAX_CONCURRENCY) {
+      const batch = ranges.slice(i, i + MAX_CONCURRENCY);
+      const settled = await Promise.all(batch.map(scanRange));
+      perRange.push(...settled);
+    }
 
     const claims = perRange.flatMap((r) =>
       r.claimLogs.map((log) => ({
