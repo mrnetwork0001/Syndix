@@ -5,8 +5,9 @@ import {
   IS_LIVE_CHAIN,
   SYNDIX_CONTRACTS,
   giwaSepolia,
+  ZERO_ADDRESS,
 } from "./giwa";
-import { ipfsGatewayUrl } from "./ipfs";
+import { ipfsGatewayUrls } from "./ipfs";
 
 /**
  * Reads the published issue set from the chain, with bodies fetched from IPFS.
@@ -53,6 +54,23 @@ export type OnchainIssuesResult =
   | { ok: false; reason: string };
 
 const CACHE_TTL_MS = 60 * 1000;
+
+/** Gateway requests in flight at once. Enough to be quick, few enough not to be throttled. */
+const METADATA_CONCURRENCY = 4;
+
+/**
+ * Bodies, keyed by CID, cached for the life of the process.
+ *
+ * A CID is a hash of its content, so what it points at can never change. There
+ * is no correctness reason to ever re-fetch one, and re-fetching is what made a
+ * cold issue page take thirty-five seconds. The index TTL above still governs
+ * how quickly a *new* article appears; this only stops us paying for the same
+ * bytes twice.
+ */
+const bodyCache = new Map<
+  string,
+  { metadata: OnchainIssueMetadata | null; reason: string | null }
+>();
 let cached: { at: number; result: OnchainIssuesResult } | null = null;
 
 /**
@@ -62,22 +80,41 @@ let cached: { at: number; result: OnchainIssuesResult } | null = null;
  * exist because a gateway was busy. 429 is retried with backoff; 400/404 is the
  * signal that a CID really has nothing behind it.
  */
+/** Cached wrapper. Only a successful body is remembered - a failure may be transient. */
 async function fetchMetadata(
   contentURI: string,
+): Promise<{ metadata: OnchainIssueMetadata | null; reason: string | null }> {
+  const hit = bodyCache.get(contentURI);
+  if (hit) return hit;
+
+  // Preferred gateway first, public one as fallback. A CID that 404s on a
+  // dedicated gateway may still resolve on the public network.
+  let last = { metadata: null as OnchainIssueMetadata | null, reason: "no gateway configured" as string | null };
+  for (const url of ipfsGatewayUrls(contentURI)) {
+    last = await fetchFromGateway(contentURI, url);
+    if (last.metadata) break;
+  }
+  if (last.metadata) bodyCache.set(contentURI, last);
+  return last;
+}
+
+async function fetchFromGateway(
+  contentURI: string,
+  url: string,
   attempt = 0,
 ): Promise<{ metadata: OnchainIssueMetadata | null; reason: string | null }> {
   if (!contentURI.startsWith("ipfs://")) {
     return { metadata: null, reason: `Unsupported contentURI scheme` };
   }
   try {
-    const response = await fetch(ipfsGatewayUrl(contentURI), {
+    const response = await fetch(url, {
       signal: AbortSignal.timeout(15_000),
       headers: { accept: "application/json" },
     });
 
     if (response.status === 429 && attempt < 3) {
       await new Promise((r) => setTimeout(r, 400 * 2 ** attempt));
-      return fetchMetadata(contentURI, attempt + 1);
+      return fetchFromGateway(contentURI, url, attempt + 1);
     }
 
     if (!response.ok) {
@@ -150,11 +187,25 @@ export async function readOnchainIssues(): Promise<OnchainIssuesResult> {
       args: [0n, BigInt(articleCount)],
     });
 
-    // Sequential on purpose. Six concurrent gateway requests is what tripped
-    // the rate limiter and produced misleading "not pinned" diagnoses.
+    // Bounded concurrency rather than strictly sequential. Fetching all ten
+    // bodies one after another is what made a cold feed slow; firing all ten at
+    // once is what tripped the gateway's rate limiter and produced misleading
+    // "not pinned" diagnoses. Four at a time satisfies both.
+    const bodies = new Map<string, Awaited<ReturnType<typeof fetchMetadata>>>();
+    for (let i = 0; i < page.length; i += METADATA_CONCURRENCY) {
+      const batch = page.slice(i, i + METADATA_CONCURRENCY);
+      const settled = await Promise.all(
+        batch.map(async (a) => [a.contentURI, await fetchMetadata(a.contentURI)] as const),
+      );
+      for (const [uri, result] of settled) bodies.set(uri, result);
+    }
+
     const issues: OnchainIssue[] = [];
     for (const article of page) {
-      const { metadata, reason } = await fetchMetadata(article.contentURI);
+      const { metadata, reason } = bodies.get(article.contentURI) ?? {
+        metadata: null,
+        reason: "not fetched",
+      };
       const perReader = article.rewardPerReader;
       issues.push(
         {
@@ -187,6 +238,61 @@ export async function readOnchainIssues(): Promise<OnchainIssuesResult> {
       ok: false,
       reason: error instanceof Error ? error.message : String(error),
     };
+  }
+}
+
+/**
+ * One article, with only its own body fetched.
+ *
+ * `readOnchainIssues` walks the whole index and resolves every body, which is
+ * right for the feed and badly wrong for a single issue page: rendering one
+ * article meant ten sequential gateway round trips and then discarding nine of
+ * them. That was most of a thirty-five second cold render.
+ *
+ * This reads the index (cheap, and usually already cached) and fetches exactly
+ * the one body it needs.
+ */
+export async function readOnchainIssue(
+  articleId: number,
+): Promise<OnchainIssue | null> {
+  if (!Number.isInteger(articleId) || articleId <= 0) return null;
+  if (SYNDIX_CONTRACTS.treasury === ZERO_ADDRESS) return null;
+
+  try {
+    const client = createPublicClient({
+      chain: giwaSepolia,
+      transport: http(GIWA_RPC_HTTP, { timeout: 15_000, retryCount: 1 }),
+    });
+
+    const article = await client.readContract({
+      address: SYNDIX_CONTRACTS.treasury,
+      abi: syndixTreasuryAbi,
+      functionName: "articles",
+      args: [BigInt(articleId)],
+    });
+
+    // articles() returns the zero struct for an id that was never published.
+    const [id, title, contentURI, rewardPool, rewardPerReader, totalClaimed, publishedAt, isActive] =
+      article as unknown as [bigint, string, string, bigint, bigint, bigint, bigint, boolean];
+    if (id === 0n) return null;
+
+    const { metadata, reason } = await fetchMetadata(contentURI);
+
+    return {
+      articleId: Number(id),
+      title,
+      contentURI,
+      rewardPoolWei: rewardPool.toString(),
+      rewardPerReaderWei: rewardPerReader.toString(),
+      totalClaimedWei: totalClaimed.toString(),
+      claimedCount: rewardPerReader > 0n ? Number(totalClaimed / rewardPerReader) : 0,
+      publishedAt: new Date(Number(publishedAt) * 1000).toISOString(),
+      isActive,
+      metadata,
+      unavailableReason: reason,
+    } satisfies OnchainIssue;
+  } catch {
+    return null;
   }
 }
 

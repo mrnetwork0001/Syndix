@@ -12,7 +12,7 @@ import { IssueHeader } from "@/components/reader/issue-header";
 import { MarkdownBody } from "@/components/reader/markdown-body";
 import { ScorePanel } from "@/components/reader/score-panel";
 import { SignalList } from "@/components/reader/signal-list";
-import { readOnchainIssues } from "@/lib/onchain-issues";
+import { readOnchainIssue } from "@/lib/onchain-issues";
 import { toRenderableIssue } from "@/lib/issue-adapter";
 import { readPublishIndex } from "@/lib/publish-tx";
 import { explorerBlock, explorerTx } from "@/lib/giwa";
@@ -40,13 +40,12 @@ async function loadIssue(id: string): Promise<Issue | null> {
   const articleId = Number(id);
   if (!Number.isInteger(articleId) || articleId <= 0) return null;
 
-  const [onchain, publishIndex] = await Promise.all([
-    readOnchainIssues(),
+  // Only this article's body. Reading the whole index here meant ten sequential
+  // gateway fetches to render one page, nine of them discarded.
+  const [article, publishIndex] = await Promise.all([
+    readOnchainIssue(articleId),
     readPublishIndex(),
   ]);
-  if (!onchain.ok) return null;
-
-  const article = onchain.issues.find((i) => i.articleId === articleId);
   if (!article || !article.isActive) return null;
 
   return toRenderableIssue(article, publishIndex.get(article.articleId));

@@ -24,6 +24,31 @@ const PINATA_JSON_ENDPOINT = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
  */
 export const IPFS_GATEWAY = "https://ipfs.io/ipfs";
 
+/**
+ * Gateways tried in order, fastest first.
+ *
+ * The public ipfs.io gateway takes ~9s on a CID it has not seen and ~0.8s once
+ * warm, which is most of why an issue page felt broken on a first visit. A
+ * Pinata dedicated gateway serves what we pinned directly and is far quicker,
+ * so it goes first when configured. ipfs.io stays as the fallback: it is the
+ * one that works without any credential, which matters for anyone running this
+ * from a clone.
+ *
+ * Set PINATA_GATEWAY to the host only, e.g. "mycrew.mypinata.cloud".
+ */
+export function ipfsGateways(): string[] {
+  const dedicated = process.env.PINATA_GATEWAY?.trim().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  return dedicated
+    ? [`https://${dedicated}/ipfs`, IPFS_GATEWAY]
+    : [IPFS_GATEWAY];
+}
+
+/** Every candidate URL for a CID, in preference order. */
+export function ipfsGatewayUrls(uri: string): string[] {
+  const cid = uri.replace(/^ipfs:\/\//, "");
+  return ipfsGateways().map((base) => `${base}/${cid}`);
+}
+
 export function hasPinataKey(): boolean {
   return Boolean(process.env.PINATA_JWT?.trim());
 }
