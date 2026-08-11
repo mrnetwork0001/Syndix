@@ -515,23 +515,62 @@ that they did.
 
 ## Roadmap
 
-1. **Deploy `SyndixPublisher`** and schedule the pipeline, making the newsroom genuinely
-   unattended without putting an owner key on a server.
-2. **Comprehension challenges** derived from the issue body, raising proof of read above
-   time and scroll depth.
-3. **Gasless claims** once a bundler serves chain 91342 and a smart-account factory is
-   available. The paymaster is already deployed and funded.
-4. **KRW denomination** when GIWA's stablecoin ships, so a 100 KRW promise pays 100 KRW.
-5. **Deploy `SyndixSponsorship`** and open sponsored issues, turning the treasury
-   from a subsidy into revenue. Then `publishFromBalance` on the treasury, so a
-   sponsor's deposit is bound to an article pool by the contract rather than by
-   the operator recycling it.
-6. **Correction chains.** Issues are immutable, so a correction has to be a new issue -
-   linking the two with a `supersedes` field in the pinned metadata makes that chain
-   auditable. Needs no contract change, since the link lives in the article JSON.
+**The reward is the hook. The proof is the product.**
+
+Syndix is not trying to be a better newsletter. It is trying to be the layer that makes
+attention verifiable - a thing advertising has never had, and the reason roughly $80B a
+year is lost to fraud. Everything below either sharpens that proof or gets it in front of
+more people.
+
+Items are grouped by what actually gates them, not by preference. Where something waits
+on infrastructure outside this project, it says so rather than being listed as work.
+
+### Now - ready to ship
+
+1. **Deploy `SyndixPublisher`.** Written, 21 tests. Splits publishing from treasury
+   control so the pipeline can run unattended without an owner key on a server.
+2. **Deploy `SyndixSponsorship`.** Written, 18 tests. Turns the treasury from a subsidy
+   into revenue: a capped protocol fee, and a reader share no owner function can reach.
+3. **Multi-agent newsroom.** Specialist agents - onchain activity, protocol updates,
+   Korean market context - that cite their sources, rather than one generalist prompt.
+4. **Korean issues.** GIWA is built by Dunamu and demo day is Korea Blockchain Week.
+   Generated bilingually and pinned as a pair, not a translated interface: article bodies
+   are content-addressed, so a translation is a different document, not an edit.
+
+### Next - builds on what exists
+
+5. **Comprehension challenges.** Proof of read currently proves time and scrolling. The
+   next version asks something only the issue can answer, closing the gap the honesty
+   table already admits.
+6. **Correction chains.** Issues are immutable, so a correction must be a new issue. A
+   `supersedes` field in the pinned metadata makes that chain auditable. No contract
+   change - the link lives in the article JSON.
 7. **Reader-commissioned coverage.** Readers pool ETH to fund an issue on a topic,
-   inverting the sponsor model. A new contract alongside the treasury, in the same shape
-   as `SyndixSponsorship` - the deployed treasury stays untouched.
+   inverting the sponsor model. A new contract alongside the treasury; the deployed
+   treasury stays untouched.
+8. **Attention marketplace.** The honest endpoint of the sponsor receipt: advertisers buy
+   verified human reads with settlement anyone can recompute from the contract. This is
+   the business the proof makes possible.
+
+### Blocked - waiting on GIWA, not on us
+
+9. **Gasless claims.** `SyndixPaymaster` is deployed, staked and funded, and sponsors only
+   `claimReaderReward`. It needs a bundler serving chain 91342 and a smart-account
+   factory. Neither exists yet.
+10. **KRW denomination.** `SyndixStableTreasury` is written and tested against a mock, so
+    a 100 KRW promise pays exactly 100 KRW. It needs GIWA's stablecoin.
+11. **Mainnet deployment.** Contracts are clean and tested; a third-party audit is a real
+    cost to budget for rather than a checkbox, and private mainnet access is GIWA's to
+    grant.
+
+### Deliberately not doing
+
+**Selling reader behaviour.** An obvious revenue line, and the wrong one. The attention
+ledger's whole claim is that a reader's record belongs to the reader - monetising it
+would make us the thing we are positioned against.
+
+**Reader moderation of issues.** The feed's promise is that nobody submits an article and
+nothing is moderated. A quality-flagging layer would quietly retract that.
 
 ---
 

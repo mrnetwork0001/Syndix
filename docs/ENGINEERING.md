@@ -167,6 +167,26 @@ routing through it made every article published since fail as "not published yet
 broke the claim modal, the attest route, and the on-chain record panel. Never
 reintroduce a dataset-keyed id lookup; ask the treasury.
 
+## Positioning - what this is for
+
+**The reward is the hook. The proof is the product.**
+
+Syndix is not a newsletter that happens to pay. It is an attempt to make attention
+verifiable, which advertising has never managed - and the reason a large share of ad
+spend is lost to fraud. Every mechanism here serves that: the `up.id` gate makes a reader
+countable, server-measured dwell makes attention checkable, and the claim event makes it
+recomputable by anyone from the contract.
+
+Two things follow, and they constrain what may be built:
+
+- **A reader's record belongs to the reader.** Selling reading behaviour is an obvious
+  revenue line and it is off the table - it would make Syndix the thing it is positioned
+  against. `/api/reader/:address` is public and unauthenticated for this reason.
+- **Nothing is moderated.** Nobody submits an article, so no curation or flagging layer
+  gets added without retracting that claim.
+
+Full roadmap, grouped by what gates each item, lives in the README.
+
 ## Honesty rule
 
 **Anywhere the UI shows data that is not what it claims to be, it must say so.** This is a
