@@ -16,6 +16,11 @@ import {
   pinIssueMetadata,
 } from "@/lib/ipfs";
 import { ISSUES, TRACKS } from "@/lib/data/issues";
+import {
+  collectTelemetry,
+  telemetryDigest,
+  type ChainTelemetry,
+} from "@/lib/telemetry";
 import type { AgentLogLine, AgentStage, TrackId } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -51,31 +56,6 @@ function makeLine(
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-/** Live head state from GIWA Sepolia. Never throws - the run degrades instead. */
-async function scanChain(): Promise<{
-  blockNumber: bigint | null;
-  gasPriceWei: bigint | null;
-  error?: string;
-}> {
-  try {
-    const client = createPublicClient({
-      chain: giwaSepolia,
-      transport: http(GIWA_RPC_FLASHBLOCKS, { timeout: 8_000, retryCount: 1 }),
-    });
-    const [blockNumber, gasPriceWei] = await Promise.all([
-      client.getBlockNumber(),
-      client.getGasPrice(),
-    ]);
-    return { blockNumber, gasPriceWei };
-  } catch (error) {
-    return {
-      blockNumber: null,
-      gasPriceWei: null,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-}
-
 function resolveTrack(input: unknown): TrackId {
   const ids = TRACKS.map((t) => t.id);
   return typeof input === "string" && (ids as string[]).includes(input)
@@ -87,7 +67,7 @@ async function runLive(
   emit: Emit,
   track: TrackId,
   startedAt: number,
-  chain: Awaited<ReturnType<typeof scanChain>>,
+  telemetry: ChainTelemetry,
 ): Promise<GeneratedIssue> {
   const client = openaiClient();
   const model = openaiModel();
@@ -104,14 +84,19 @@ async function runLive(
     ),
   });
 
-  const signalDigest = ISSUES.slice(0, 3)
-    .flatMap((issue) => issue.signals)
-    .slice(0, 8)
-    .map((s) => `- [${s.kind}] ${s.label}: ${s.detail} (ref ${s.ref})`)
-    .join("\n");
+  /**
+   * Only what was measured this run.
+   *
+   * This used to splice signals out of lib/data/issues.ts - hand-authored demo
+   * content - and the model reported them as fresh findings, because that is
+   * exactly what it was told they were. One such line claimed a 1,842-sample
+   * latency benchmark nobody had ever run. The prompt already forbade inventing
+   * figures and the model was obeying it; the signals were the lie.
+   */
+  const signalDigest = telemetryDigest(telemetry);
 
-  const headline = chain.blockNumber
-    ? `Live GIWA Sepolia head: block ${chain.blockNumber}, gas price ${chain.gasPriceWei ?? "unknown"} wei.`
+  const headline = telemetry.blockNumber
+    ? `Live GIWA Sepolia head: block ${telemetry.blockNumber}, measured at ${telemetry.takenAt}.`
     : "Live head state was unavailable this run; do not cite a block height.";
 
   const stream = await client.chat.completions.create({
@@ -127,7 +112,22 @@ async function runLive(
 
 ${headline}
 
-Signals gathered this run:
+Signals measured this run - these are the ONLY figures you may cite. Every one
+was sampled or read from chain moments ago. Do not introduce any other number,
+benchmark, percentage or measurement from any source, including your own
+knowledge. If a claim needs a figure that is not listed below, make the claim
+qualitatively or leave it out. Additional rules, each of which a previous draft
+broke:
+
+- Copy figures exactly as listed; do not round, adjust or re-derive them.
+- Simple ratios of listed figures are allowed only if you show the division.
+- Never report a count of polls, failures, duplicates or repeats unless that
+  exact count is listed. Not by subtraction, not by estimate. The listed poll
+  totals and distinct-state counts are the only poll figures that may appear.
+- Name onchain mechanisms only as the signals name them. The reader claim is
+  SyndixTreasury's claimReaderReward; do not attribute it to EAS, ERC standards
+  or anything else the signals do not say.
+
 ${signalDigest}
 
 Return JSON matching the required schema.`,
@@ -255,33 +255,64 @@ export async function POST(request: NextRequest) {
           ),
         });
 
-        const chain = await scanChain();
-        if (chain.blockNumber !== null) {
+        // Measures head state, RPC latency on both endpoints, and treasury
+        // state. Whatever comes back here is the complete set of figures the
+        // issue may contain.
+        const telemetry = await collectTelemetry();
+
+        if (telemetry.blockNumber !== null) {
           emit({
             type: "log",
             line: makeLine(
               Date.now() - startedAt,
               "scanning",
               "ok",
-              `Head at block ${chain.blockNumber}`,
-              `gas ${chain.gasPriceWei} wei`,
+              `Head at block ${telemetry.blockNumber}`,
+              `gas ${telemetry.gasPriceWei} wei`,
             ),
           });
-        } else {
+        }
+        for (const l of telemetry.latency) {
+          if (l.samples === 0) continue;
+          emit({
+            type: "log",
+            line: makeLine(
+              Date.now() - startedAt,
+              "scanning",
+              "ok",
+              `${l.label}: p50 ${l.p50Ms}ms, p95 ${l.p95Ms}ms`,
+              `${l.samples} samples`,
+            ),
+          });
+        }
+        for (const a of telemetry.advance) {
+          if (a.polls === 0) continue;
+          emit({
+            type: "log",
+            line: makeLine(
+              Date.now() - startedAt,
+              "scanning",
+              "ok",
+              `${a.label}: ${a.distinctStates} distinct states in ${(a.windowMs / 1000).toFixed(1)}s`,
+              `${a.blockTag} tag, ${a.polls} polls`,
+            ),
+          });
+        }
+        for (const err of telemetry.errors) {
           emit({
             type: "log",
             line: makeLine(
               Date.now() - startedAt,
               "scanning",
               "warn",
-              "Live RPC unreachable - continuing from cached signals",
-              chain.error?.slice(0, 120),
+              "Probe failed - the issue will not cite it",
+              err.slice(0, 120),
             ),
           });
         }
 
         if (hasKey) {
-          const generated = await runLive(emit, track, startedAt, chain);
+          const generated = await runLive(emit, track, startedAt, telemetry);
 
           // Pin before publishing so contentURI points at retrievable content
           // rather than a decorative CID.
@@ -308,11 +339,11 @@ export async function POST(request: NextRequest) {
                 { trait_type: "Sentiment", value: generated.sentiment },
                 { trait_type: "Engagement index", value: generated.engagementIndex },
                 { trait_type: "Model", value: openaiModel() },
-                ...(chain.blockNumber
+                ...(telemetry.blockNumber
                   ? [
                       {
                         trait_type: "Scanned at block",
-                        value: chain.blockNumber.toString(),
+                        value: telemetry.blockNumber,
                       },
                     ]
                   : []),
