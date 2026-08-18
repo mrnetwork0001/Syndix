@@ -115,6 +115,44 @@ export function validateGeneratedIssue(value: unknown): string[] {
     }
   }
 
+  // Arithmetic the draft shows its working for, checked.
+  //
+  // The prompt allows a ratio "only if you show the division", which turned out
+  // to license the error rather than prevent it: a live draft wrote
+  // "2840000000000000 wei / 180362045136 wei per claim = 15.75" - the true
+  // answer is 15746 - and then repeated the wrong figure as a conclusion. These
+  // models handle 15-digit division badly and state the result with confidence,
+  // which is the worst combination.
+  //
+  // Only expressions the draft itself spells out are checked. Anything it does
+  // not show cannot be verified here, which is a reason to forbid unshown
+  // arithmetic in the prompt rather than a reason to guess.
+  {
+    const text = typeof v.body === "string" ? v.body : "";
+    const num = String.raw`\d[\d,]*(?:\.\d+)?`;
+    const shown = new RegExp(
+      String.raw`(${num})\s*(?:wei)?\s*([/*x×])\s*(${num})\s*(?:wei[^=≈]*?)?\s*[=≈]\s*(${num})`,
+      "gi",
+    );
+    for (const m of text.matchAll(shown)) {
+      const [, aRaw, op, bRaw, cRaw] = m;
+      const a = Number(aRaw.replace(/,/g, ""));
+      const b = Number(bRaw.replace(/,/g, ""));
+      const c = Number(cRaw.replace(/,/g, ""));
+      if (![a, b, c].every(Number.isFinite) || b === 0) continue;
+      const expected = op === "/" ? a / b : a * b;
+      if (expected === 0) continue;
+      // 1% tolerance absorbs honest rounding; the failures seen were 1000x.
+      if (Math.abs(expected - c) / Math.abs(expected) > 0.01) {
+        problems.push(
+          `body shows "${m[0].slice(0, 60).trim()}" but ${aRaw} ${op} ${bRaw} is ${
+            expected >= 1000 ? Math.round(expected).toLocaleString("en-US") : expected.toPrecision(6)
+          }`,
+        );
+      }
+    }
+  }
+
   // Placeholder or error text where prose belongs. Observed live: a title of
   // "POLL ERROR: No valid title context" and a matching standfirst, in a
   // response whose body was otherwise correct. Length checks passed it because

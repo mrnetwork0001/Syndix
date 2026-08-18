@@ -239,3 +239,45 @@ describe("normalizeIssueProse", () => {
     );
   });
 });
+
+describe("shown arithmetic", () => {
+  const withBody = (extra: string) => ({ ...VALID, body: VALID.body + "\n\n" + extra });
+
+  it("catches the 1000x division error seen live", () => {
+    // Verbatim from a draft that passed every other check, then repeated the
+    // wrong figure as a conclusion. True answer: 15746.
+    const problems = validateGeneratedIssue(
+      withBody("2840000000000000 wei / 180362045136 wei per claim = 15.75"),
+    );
+    expect(problems.join(" ")).toContain("15,746");
+  });
+
+  it("accepts division that is right", () => {
+    expect(validateGeneratedIssue(withBody("10999 / 27 = 407"))).toEqual([]);
+  });
+
+  it("accepts multiplication that is right", () => {
+    // The claim-cost line every issue carries.
+    expect(
+      validateGeneratedIssue(withBody("180313 x 1000272 = 180362045136")),
+    ).toEqual([]);
+  });
+
+  it("catches multiplication that is wrong", () => {
+    expect(
+      validateGeneratedIssue(withBody("180313 x 1000272 = 180362045000000")).join(" "),
+    ).toContain("180,362,045,136");
+  });
+
+  it("tolerates honest rounding", () => {
+    // 10999/27 = 407.37; a draft saying 407 is not an error.
+    expect(validateGeneratedIssue(withBody("10999 / 27 = 407.4"))).toEqual([]);
+    expect(validateGeneratedIssue(withBody("27 / 7 = 3.86"))).toEqual([]);
+  });
+
+  it("handles comma-grouped figures", () => {
+    expect(
+      validateGeneratedIssue(withBody("2,840,000,000,000,000 / 30,000,000,000,000 = 94.67")),
+    ).toEqual([]);
+  });
+});

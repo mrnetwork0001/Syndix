@@ -35,7 +35,16 @@ qualitatively or leave it out. Additional rules, each of which a previous draft
 broke:
 
 - Copy figures exactly as listed; do not round, adjust or re-derive them.
-- Simple ratios of listed figures are allowed only if you show the division.
+- Simple ratios of listed figures are allowed only if you show the division AND
+  both figures measure the same kind of thing. A draft divided the reader reward
+  reserve by the gas cost of a claim and reported the result as "claims the
+  reserve can fund". Those are unrelated: gas is paid by the reader from their
+  own wallet, rewards come out of the reserve. Do not divide a wei balance by a
+  gas cost.
+- Do arithmetic only when you are certain of it, and never on figures with more
+  than about nine digits. A draft computed 2840000000000000 / 180362045136 as
+  15.75 when the answer is 15746, then repeated the wrong number as its
+  conclusion. Quoting a figure is always safe; deriving one is not.
 - Never report a count of polls, failures, duplicates or repeats unless that
   exact count is listed. Not by subtraction, not by estimate. The listed poll
   totals and distinct-state counts are the only poll figures that may appear.
