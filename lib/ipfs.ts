@@ -68,6 +68,14 @@ export interface IssueMetadata {
   executiveSummary?: string[];
   attributes: { trait_type: string; value: string | number }[];
   external_url?: string;
+  /**
+   * The telemetry this issue was written from.
+   *
+   * Pinned so the next run can diff against it and skip publishing when
+   * nothing moved - see lib/novelty.ts. Kept out of `attributes` because it is
+   * machine state, not a trait anyone wants rendered on a token.
+   */
+  telemetry?: unknown;
 }
 
 export type PinResult =

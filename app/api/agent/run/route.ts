@@ -20,6 +20,7 @@ import {
   telemetryDigest,
   type ChainTelemetry,
 } from "@/lib/telemetry";
+import { telemetrySnapshot } from "@/lib/novelty";
 import type { AgentLogLine, AgentStage, TrackId } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -333,6 +334,9 @@ export async function POST(request: NextRequest) {
               content: generated.body,
               executiveSummary: generated.executiveSummary,
               external_url: "https://docs.giwa.io",
+              // Carried so the next run can tell whether anything moved. This
+              // issue is its own comparison point; nothing is kept on a server.
+              telemetry: telemetrySnapshot(telemetry),
               attributes: [
                 { trait_type: "Track", value: track },
                 { trait_type: "Sentiment", value: generated.sentiment },
