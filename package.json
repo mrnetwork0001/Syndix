@@ -15,7 +15,8 @@
     "abi": "forge build && node scripts/generate-abi.mjs",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build && npm run contracts:test",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "cycle": "node --env-file=.env.local node_modules/.bin/tsx scripts/publish-cycle.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.4",
@@ -43,6 +44,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5",
     "vitest": "^4.1.10"
   }
