@@ -154,16 +154,25 @@ snapshot, and only the server can mint one.
 | Full elapsed time, no scrolling | `Scroll through the whole issue` |
 | Session earned on one article, used on another | refused |
 
-Defaults are **300 seconds and 85% scroll depth**, both configurable with
-`READ_MIN_SECONDS` and `READ_MIN_DEPTH`. The contract enforces its own independent floor
-via `minDwellSeconds`, so lowering the server threshold can never take a claim below what
-the treasury accepts.
+The server threshold is **300 seconds and 85% scroll depth**, set with `READ_MIN_SECONDS`
+and `READ_MIN_DEPTH` - and the deployed value is what counts, not the default, so check
+the environment rather than this line. `SyndixTreasury.minDwellSeconds` is a separate,
+much lower floor (currently **20 seconds**); it is a backstop against a compromised
+attester, not the real gate.
 
-**What this still does not prove:** comprehension. A script that holds a session open and
-beats on a timer still qualifies. What it can no longer do is claim instantly or in bulk,
-and `up.id` already caps it at one claim per human per article, so farming costs more time
-than the reward pays. Content-derived challenges would raise the bar further and are on
-the roadmap.
+**What this does not prove, demonstrated:** comprehension. On 2026-08-18, eighteen wallets
+claimed issue 11 - sixteen of them inside eighteen blocks, about eighteen seconds. Every
+one held a genuine `up.id`, every one carried a server-measured session, and dwell decoded
+from their calldata ran 49 to 179 seconds against a threshold then set to 45. Nothing was
+bypassed. They opened the article together, waited out the timer, and claimed the moment
+it unlocked.
+
+So the gates held and the reading did not happen. An earlier version of this section argued
+that farming "costs more time than the reward pays"; that was wrong, because on a testnet
+the reward is not the point and the time is cheap. What proof-of-read actually buys is that
+a claim cannot be instant, cannot be bulk-submitted from one wallet, and is capped at one
+per `up.id` per article. It buys a floor on effort, not evidence of attention.
+Content-derived challenges would raise that floor and are on the roadmap.
 
 ### Why the attester is not a middleman
 
