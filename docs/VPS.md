@@ -83,10 +83,16 @@ bash scripts/preflight.sh
 
 # 2. A dedicated unprivileged user, so nothing here runs as root or as the
 #    user your other services use.
-sudo useradd --system --create-home --home-dir /opt/syndix --shell /usr/sbin/nologin syndix
+#
+#    NOT --create-home. That would populate /opt/syndix with shell skeleton
+#    files, and git clone refuses a directory that is not empty. The directory
+#    is made separately below so git owns its contents.
+sudo useradd --system --home-dir /opt/syndix --shell /usr/sbin/nologin syndix
 
-# 3. Code.
-sudo -u syndix git clone https://github.com/mrnetwork0001/syndix /opt/syndix
+# 3. Code. `install -d` creates the directory already owned by syndix, so the
+#    clone runs unprivileged into an empty path.
+sudo install -d -o syndix -g syndix -m 755 /opt/syndix
+sudo -u syndix git clone https://github.com/mrnetwork0001/Syndix.git /opt/syndix
 cd /opt/syndix
 
 # 4. Dependencies. --include=dev is deliberate: tsx is a devDependency, and a
