@@ -143,8 +143,34 @@ SyndixTreasury      0x5465f31a6155E3eCCcC35f4E5bDC0e287763B0ee
 SyndixArticleNFT    0xA0D49A6C4Ac081a2de9af2f422EdfffB8f41190e
 UpIdReaderRegistry  0xa316Bb7762c5689ec905b2dec2899Ded93557941  <- treasury points here
 SyndixPaymaster     0x3B13186a1E4b1108eA5CB2f8853D84A2aeD71Cc5
+SyndixSponsorship   0xC853Eaef43Fa30FBB990F13cb3fCaea2A00A256a  <- revenue split
+SyndixPublisher     0xb542E132e43149E99bef100654Dbe9e079470824  <- OWNS THE TREASURY
 MockUpIdRegistry    0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d  (superseded, still live)
 ```
+
+`SyndixTreasury` is owned by `SyndixPublisher`, not by an EOA. `publishArticle`
+is `onlyOwner`, so automated publishing runs through the guard and inherits its
+caps - currently 0.001 ETH per article and 1 publish per day. A hot key on a
+server holds the `publisher` role and nothing else.
+
+Verified on chain rather than assumed, on 2026-08-17:
+
+| Attempt from the hot key | Result |
+| --- | --- |
+| Drain the guard's balance | refused |
+| Recover treasury ownership | refused |
+| Raise its own caps | refused |
+| Exceed the daily cap | refused |
+| Publish over the per-article pool cap | refused |
+| Call `publishArticle` on the treasury directly | refused |
+| Withdraw from the treasury | refused |
+| `topUp` within caps | allowed - issue 11's pool went 6e14 to 8e14 wei |
+
+The cold owner keeps everything, including `execute(bytes)`, a passthrough to
+any `onlyOwner` call the guard has no method of its own for. The escape hatch
+was tested end to end before anything depended on it: ownership moved to the
+guard, `recoverTreasuryOwnership` returned it in one transaction, and it was
+then handed over for real. Nothing here is a one-way door.
 
 `SyndixTreasury.readerRegistry` is `UpIdReaderRegistry`, so claims gate on the **real**
 ecosystem registry. Consequence: a wallet holding only a mock-issued name can no longer

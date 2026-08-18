@@ -75,9 +75,11 @@ contract that closes that gap safely, written and tested but not yet deployed.
 | `SyndixArticleNFT` | [`0xA0D49A6C4Ac081a2de9af2f422EdfffB8f41190e`](https://sepolia-explorer.giwa.io/address/0xA0D49A6C4Ac081a2de9af2f422EdfffB8f41190e) |
 | `UpIdReaderRegistry` | [`0xa316Bb7762c5689ec905b2dec2899Ded93557941`](https://sepolia-explorer.giwa.io/address/0xa316Bb7762c5689ec905b2dec2899Ded93557941) |
 | `SyndixPaymaster` | [`0x3B13186a1E4b1108eA5CB2f8853D84A2aeD71Cc5`](https://sepolia-explorer.giwa.io/address/0x3B13186a1E4b1108eA5CB2f8853D84A2aeD71Cc5) |
+| `SyndixSponsorship` | [`0xC853Eaef43Fa30FBB990F13cb3fCaea2A00A256a`](https://sepolia-explorer.giwa.io/address/0xC853Eaef43Fa30FBB990F13cb3fCaea2A00A256a) |
+| `SyndixPublisher` | [`0xb542E132e43149E99bef100654Dbe9e079470824`](https://sepolia-explorer.giwa.io/address/0xb542E132e43149E99bef100654Dbe9e079470824) |
 | `MockUpIdRegistry` (superseded, test fixture) | [`0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d`](https://sepolia-explorer.giwa.io/address/0xA82EDb5e111c31C63E06EF0007f2fa1a9e7EB30d) |
 
-All five are verified on the GIWA explorer, each publishing full source, ABI and
+All seven are verified on the GIWA explorer, each publishing full source, ABI and
 decoded constructor arguments.
 
 They show as *partial* rather than *full* match, and that is a build setting rather than
