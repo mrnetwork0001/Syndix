@@ -1,4 +1,4 @@
-import { defineChain } from "viem";
+import { defineChain, fallback, http } from "viem";
 
 /**
  * GIWA Sepolia - the OP Stack L2 operated by Dunamu / Upbit.
@@ -21,6 +21,38 @@ export const GIWA_RPC_HTTP = "https://sepolia-rpc.giwa.io";
 export const GIWA_RPC_FLASHBLOCKS = "https://sepolia-rpc-flashblocks.giwa.io";
 
 export const GIWA_EXPLORER = "https://sepolia-explorer.giwa.io";
+
+/**
+ * Transport for server-side reads: try the standard RPC, fail over to the
+ * flashblocks host.
+ *
+ * Both hosts serve the full RPC surface; the flashblocks one additionally
+ * serves preconfirmed `pending` state. On 2026-08-17 the standard RPC spent
+ * over an hour timing out every eth_call while the flashblocks host answered
+ * the same calls in under a second - and because every server-side reader
+ * pinned itself to the one degraded endpoint, the whole app read as offline
+ * while a working door stood open next to it.
+ *
+ * Standard stays first: it is the documented default, and the ranked fallback
+ * only pays the failover cost while it is actually down. The short first-try
+ * timeout is the point - failing over at 6s beats being "honest but dead" for
+ * 25s. Callers needing getLogs keep their own longer timeouts via opts.
+ */
+export function giwaServerTransport(opts?: { timeout?: number }) {
+  const timeout = opts?.timeout ?? 6_000;
+  // retryCount 0 everywhere: the failover IS the retry. With fallback's
+  // default of 3 whole-chain retries on top of per-transport retries, one
+  // logical read could emit a dozen physical requests - and under RPC
+  // congestion that amplification fed a request queue that outgrew the
+  // node's recovery and wedged the process permanently.
+  return fallback(
+    [
+      http(GIWA_RPC_HTTP, { timeout, retryCount: 0 }),
+      http(GIWA_RPC_FLASHBLOCKS, { timeout: Math.max(timeout, 10_000), retryCount: 0 }),
+    ],
+    { rank: false, retryCount: 0 },
+  );
+}
 
 export const giwaSepolia = defineChain({
   id: GIWA_SEPOLIA_ID,

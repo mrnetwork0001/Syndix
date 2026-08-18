@@ -1,11 +1,11 @@
-import { createPublicClient, http } from "viem";
+import { createPublicClient } from "viem";
 import { syndixTreasuryAbi } from "./abi";
 import {
-  GIWA_RPC_HTTP,
   IS_LIVE_CHAIN,
   SYNDIX_CONTRACTS,
-  giwaSepolia,
   ZERO_ADDRESS,
+  giwaSepolia,
+  giwaServerTransport,
 } from "./giwa";
 import { ipfsGatewayUrls } from "./ipfs";
 
@@ -71,6 +71,22 @@ const bodyCache = new Map<
   string,
   { metadata: OnchainIssueMetadata | null; reason: string | null }
 >();
+
+/**
+ * Failures, keyed by CID, remembered briefly.
+ *
+ * Six early issues were published pointing at CIDs that were never pinned - no
+ * gateway will ever produce them. Caching only successes meant every feed
+ * render re-tried each dead CID and waited out the full gateway timeout, which
+ * held the page at a flat 15 seconds per render, forever. A miss is retried
+ * after the TTL, so a CID that gets pinned late still shows up; it just stops
+ * being re-litigated on every single request.
+ */
+const failureCache = new Map<
+  string,
+  { at: number; result: { metadata: null; reason: string | null } }
+>();
+const FAILURE_TTL_MS = 15 * 60 * 1000;
 let cached: { at: number; result: OnchainIssuesResult } | null = null;
 
 /**
@@ -86,6 +102,8 @@ async function fetchMetadata(
 ): Promise<{ metadata: OnchainIssueMetadata | null; reason: string | null }> {
   const hit = bodyCache.get(contentURI);
   if (hit) return hit;
+  const miss = failureCache.get(contentURI);
+  if (miss && Date.now() - miss.at < FAILURE_TTL_MS) return miss.result;
 
   // Preferred gateway first, public one as fallback. A CID that 404s on a
   // dedicated gateway may still resolve on the public network.
@@ -94,7 +112,14 @@ async function fetchMetadata(
     last = await fetchFromGateway(contentURI, url);
     if (last.metadata) break;
   }
-  if (last.metadata) bodyCache.set(contentURI, last);
+  if (last.metadata) {
+    bodyCache.set(contentURI, last);
+  } else {
+    failureCache.set(contentURI, {
+      at: Date.now(),
+      result: { metadata: null, reason: last.reason },
+    });
+  }
   return last;
 }
 
@@ -108,7 +133,7 @@ async function fetchFromGateway(
   }
   try {
     const response = await fetch(url, {
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(8_000),
       headers: { accept: "application/json" },
     });
 
@@ -154,7 +179,27 @@ async function fetchFromGateway(
   }
 }
 
-export async function readOnchainIssues(): Promise<OnchainIssuesResult> {
+/**
+ * Shares one in-flight read among concurrent callers.
+ *
+ * Without this, every overlapping render fired its own full read set. Under
+ * RPC congestion those bursts stacked faster than they drained, the per-origin
+ * request queue grew without bound, and the process wedged so thoroughly that
+ * only measurements from outside it worked. The cache above handles repeat
+ * reads over time; this handles repeat reads at the same moment.
+ */
+let readOnchainIssuesInFlight: Promise<OnchainIssuesResult> | null = null;
+
+export function readOnchainIssues(): Promise<OnchainIssuesResult> {
+  if (readOnchainIssuesInFlight) return readOnchainIssuesInFlight;
+  const run = readOnchainIssuesUncached().finally(() => {
+    readOnchainIssuesInFlight = null;
+  });
+  readOnchainIssuesInFlight = run;
+  return run;
+}
+
+async function readOnchainIssuesUncached(): Promise<OnchainIssuesResult> {
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.result;
 
   if (!IS_LIVE_CHAIN) {
@@ -164,7 +209,7 @@ export async function readOnchainIssues(): Promise<OnchainIssuesResult> {
   try {
     const client = createPublicClient({
       chain: giwaSepolia,
-      transport: http(GIWA_RPC_HTTP, { timeout: 15_000, retryCount: 1 }),
+      transport: giwaServerTransport(),
     });
 
     const count = await client.readContract({
@@ -261,7 +306,7 @@ export async function readOnchainIssue(
   try {
     const client = createPublicClient({
       chain: giwaSepolia,
-      transport: http(GIWA_RPC_HTTP, { timeout: 15_000, retryCount: 1 }),
+      transport: giwaServerTransport(),
     });
 
     const article = await client.readContract({

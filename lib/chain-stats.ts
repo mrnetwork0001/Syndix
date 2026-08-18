@@ -1,10 +1,10 @@
-import { createPublicClient, http, formatEther } from "viem";
+import { createPublicClient, formatEther } from "viem";
 import { syndixTreasuryAbi } from "./abi";
 import {
-  GIWA_RPC_HTTP,
   IS_LIVE_CHAIN,
   SYNDIX_CONTRACTS,
   giwaSepolia,
+  giwaServerTransport,
 } from "./giwa";
 
 /**
@@ -39,7 +39,27 @@ export interface OfflineProtocolStats {
 
 export type ProtocolChainStats = LiveProtocolStats | OfflineProtocolStats;
 
-export async function readProtocolChainStats(): Promise<ProtocolChainStats> {
+/**
+ * Shares one in-flight read among concurrent callers.
+ *
+ * Without this, every overlapping render fired its own full read set. Under
+ * RPC congestion those bursts stacked faster than they drained, the per-origin
+ * request queue grew without bound, and the process wedged so thoroughly that
+ * only measurements from outside it worked. The cache above handles repeat
+ * reads over time; this handles repeat reads at the same moment.
+ */
+let readProtocolChainStatsInFlight: Promise<ProtocolChainStats> | null = null;
+
+export function readProtocolChainStats(): Promise<ProtocolChainStats> {
+  if (readProtocolChainStatsInFlight) return readProtocolChainStatsInFlight;
+  const run = readProtocolChainStatsUncached().finally(() => {
+    readProtocolChainStatsInFlight = null;
+  });
+  readProtocolChainStatsInFlight = run;
+  return run;
+}
+
+async function readProtocolChainStatsUncached(): Promise<ProtocolChainStats> {
   if (!IS_LIVE_CHAIN) {
     return {
       live: false,
@@ -51,7 +71,7 @@ export async function readProtocolChainStats(): Promise<ProtocolChainStats> {
   try {
     const client = createPublicClient({
       chain: giwaSepolia,
-      transport: http(GIWA_RPC_HTTP, { timeout: 10_000, retryCount: 1 }),
+      transport: giwaServerTransport(),
     });
     const treasury = SYNDIX_CONTRACTS.treasury;
     const common = { address: treasury, abi: syndixTreasuryAbi } as const;

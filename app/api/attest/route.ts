@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createPublicClient, http, isAddress, type Address } from "viem";
+import { createPublicClient, isAddress, type Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import {
   ATTESTATION_TTL_SECONDS,
@@ -11,7 +11,12 @@ import {
   treasuryAddress,
   type AttestationResponse,
 } from "@/lib/attest";
-import { GIWA_RPC_HTTP, IS_LIVE_CHAIN, ZERO_ADDRESS, giwaSepolia } from "@/lib/giwa";
+import {
+  IS_LIVE_CHAIN,
+  ZERO_ADDRESS,
+  giwaSepolia,
+  giwaServerTransport,
+} from "@/lib/giwa";
 import { syndixTreasuryAbi } from "@/lib/abi";
 import { readOnchainIssues } from "@/lib/onchain-issues";
 import { judgeSession } from "@/lib/read-session";
@@ -128,7 +133,7 @@ export async function POST(request: NextRequest) {
   try {
     const publicClient = createPublicClient({
       chain: giwaSepolia,
-      transport: http(GIWA_RPC_HTTP),
+      transport: giwaServerTransport(),
     });
     const [claimable, reason] = await publicClient.readContract({
       address: treasury,

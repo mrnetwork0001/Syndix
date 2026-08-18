@@ -1,9 +1,9 @@
-import { createPublicClient, http, parseAbiItem, decodeFunctionData } from "viem";
+import { createPublicClient, parseAbiItem, decodeFunctionData } from "viem";
 import {
-  GIWA_RPC_HTTP,
   IS_LIVE_CHAIN,
   SYNDIX_CONTRACTS,
   giwaSepolia,
+  giwaServerTransport,
 } from "./giwa";
 import { syndixTreasuryAbi } from "./abi";
 
@@ -72,14 +72,34 @@ export function clearAttentionCache(): void {
   cached = null;
 }
 
-export async function readAttentionIndex(): Promise<AttentionIndex | null> {
+/**
+ * Shares one in-flight read among concurrent callers.
+ *
+ * Without this, every overlapping render fired its own full read set. Under
+ * RPC congestion those bursts stacked faster than they drained, the per-origin
+ * request queue grew without bound, and the process wedged so thoroughly that
+ * only measurements from outside it worked. The cache above handles repeat
+ * reads over time; this handles repeat reads at the same moment.
+ */
+let readAttentionIndexInFlight: Promise<AttentionIndex | null> | null = null;
+
+export function readAttentionIndex(): Promise<AttentionIndex | null> {
+  if (readAttentionIndexInFlight) return readAttentionIndexInFlight;
+  const run = readAttentionIndexUncached().finally(() => {
+    readAttentionIndexInFlight = null;
+  });
+  readAttentionIndexInFlight = run;
+  return run;
+}
+
+async function readAttentionIndexUncached(): Promise<AttentionIndex | null> {
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.index;
   if (!IS_LIVE_CHAIN) return null;
 
   try {
     const client = createPublicClient({
       chain: giwaSepolia,
-      transport: http(GIWA_RPC_HTTP, { timeout: 25_000, retryCount: 2 }),
+      transport: giwaServerTransport({ timeout: 25_000 }),
     });
 
     const head = await client.getBlockNumber();
@@ -155,7 +175,7 @@ export async function readCertifiedDwell(
   try {
     const client = createPublicClient({
       chain: giwaSepolia,
-      transport: http(GIWA_RPC_HTTP, { timeout: 15_000, retryCount: 1 }),
+      transport: giwaServerTransport(),
     });
     const tx = await client.getTransaction({ hash: txHash });
     const { functionName, args } = decodeFunctionData({

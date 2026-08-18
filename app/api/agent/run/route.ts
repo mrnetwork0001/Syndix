@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
-import { createPublicClient, http } from "viem";
-import { GIWA_RPC_FLASHBLOCKS, GIWA_SEPOLIA_ID, giwaSepolia } from "@/lib/giwa";
+import { GIWA_RPC_FLASHBLOCKS, GIWA_SEPOLIA_ID } from "@/lib/giwa";
 import { AGENT_RUN_SCRIPT } from "@/lib/data/protocol";
 import {
   ISSUE_JSON_SCHEMA,

@@ -1,5 +1,10 @@
-import { createPublicClient, http, parseAbiItem } from "viem";
-import { GIWA_RPC_HTTP, IS_LIVE_CHAIN, SYNDIX_CONTRACTS, giwaSepolia } from "./giwa";
+import { createPublicClient, parseAbiItem } from "viem";
+import {
+  IS_LIVE_CHAIN,
+  SYNDIX_CONTRACTS,
+  giwaSepolia,
+  giwaServerTransport,
+} from "./giwa";
 import type { DailyPoint } from "./types";
 
 /**
@@ -128,7 +133,27 @@ export function clearIndexerCache(): void {
   eventCache = null;
 }
 
-export async function indexProtocolSeries(): Promise<IndexResult> {
+/**
+ * Shares one in-flight read among concurrent callers.
+ *
+ * Without this, every overlapping render fired its own full read set. Under
+ * RPC congestion those bursts stacked faster than they drained, the per-origin
+ * request queue grew without bound, and the process wedged so thoroughly that
+ * only measurements from outside it worked. The cache above handles repeat
+ * reads over time; this handles repeat reads at the same moment.
+ */
+let indexProtocolSeriesInFlight: Promise<IndexResult> | null = null;
+
+export function indexProtocolSeries(): Promise<IndexResult> {
+  if (indexProtocolSeriesInFlight) return indexProtocolSeriesInFlight;
+  const run = indexProtocolSeriesUncached().finally(() => {
+    indexProtocolSeriesInFlight = null;
+  });
+  indexProtocolSeriesInFlight = run;
+  return run;
+}
+
+async function indexProtocolSeriesUncached(): Promise<IndexResult> {
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.result;
   const result = await computeProtocolSeries();
   // Only cache success: a transient RPC failure should be retried, not pinned
@@ -145,7 +170,7 @@ async function computeProtocolSeries(): Promise<IndexResult> {
   try {
     const client = createPublicClient({
       chain: giwaSepolia,
-      transport: http(GIWA_RPC_HTTP, { timeout: 25_000, retryCount: 2 }),
+      transport: giwaServerTransport({ timeout: 25_000 }),
     });
 
     const head = await client.getBlockNumber();

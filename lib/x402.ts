@@ -1,11 +1,12 @@
-import { createPublicClient, http, isHex, type Hex } from "viem";
+import { createPublicClient, isHex, type Hex } from "viem";
 import {
   GIWA_RPC_HTTP,
   GIWA_SEPOLIA_ID,
+  IS_LIVE_CHAIN,
   SYNDIX_CONTRACTS,
   ZERO_ADDRESS,
   giwaSepolia,
-  IS_LIVE_CHAIN,
+  giwaServerTransport,
 } from "./giwa";
 import type { X402Challenge, X402Requirement } from "./types";
 
@@ -146,7 +147,7 @@ export async function verifyX402Payment(
   try {
     const client = createPublicClient({
       chain: giwaSepolia,
-      transport: http(GIWA_RPC_HTTP),
+      transport: giwaServerTransport(),
     });
 
     const receipt = await client.getTransactionReceipt({ hash: txHash });

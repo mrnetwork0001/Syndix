@@ -1,5 +1,10 @@
-import { createPublicClient, http, parseAbiItem } from "viem";
-import { GIWA_RPC_HTTP, SYNDIX_CONTRACTS, ZERO_ADDRESS, giwaSepolia } from "./giwa";
+import { createPublicClient, parseAbiItem } from "viem";
+import {
+  SYNDIX_CONTRACTS,
+  ZERO_ADDRESS,
+  giwaSepolia,
+  giwaServerTransport,
+} from "./giwa";
 
 /**
  * Resolves the transaction that published each article.
@@ -59,7 +64,7 @@ export async function readPublishIndex(): Promise<PublishIndex> {
   try {
     const client = createPublicClient({
       chain: giwaSepolia,
-      transport: http(GIWA_RPC_HTTP, { timeout: 15_000, retryCount: 1 }),
+      transport: giwaServerTransport(),
     });
 
     const head = await client.getBlockNumber();
