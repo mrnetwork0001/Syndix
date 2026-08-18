@@ -1,0 +1,69 @@
+[Unit]
+Description=Syndix publishing cycle - measure GIWA, publish only if something changed
+Documentation=https://github.com/mrnetwork0001/syndix
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=syndix
+Group=syndix
+WorkingDirectory=/opt/syndix
+
+# Holds PUBLISHER_PRIVATE_KEY, OPENAI_API_KEY, PINATA_JWT and the contract
+# addresses. Keep it 0600 and owned by the syndix user - it is the only thing
+# on this box that can spend anything.
+EnvironmentFile=/opt/syndix/.env.local
+
+# The node binary is spelled out rather than resolved from PATH, because
+# systemd starts services with a minimal PATH that will not contain a
+# node installed via nvm, fnm or asdf. Run `scripts/preflight.sh` - it prints
+# the exact line for this machine. Change BOTH paths if node lives elsewhere.
+#
+# node is invoked directly rather than through `npm run`, so this unit does not
+# depend on which npm is first on PATH and spawns one process instead of three.
+ExecStart=/usr/bin/node --env-file=/opt/syndix/.env.local /opt/syndix/node_modules/.bin/tsx /opt/syndix/scripts/publish-cycle.ts
+
+# A cycle is measure (~40s) + generate (~25s) + pin + one transaction. Well
+# under this, but a hung RPC must not leave the unit running until the next
+# timer fires and overlaps with itself.
+TimeoutStartSec=600
+
+# No restart on failure. A failed cycle means "skipped today", which is a
+# perfectly good outcome; retrying into a broken RPC just burns the daily
+# allowance on a worse issue.
+Restart=no
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=syndix-cycle
+
+# Keep this unit off the rest of the machine. Everything below is scoped to
+# this service alone and changes nothing for anything else already running.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+# ProtectSystem=strict makes the filesystem read-only, so anything the process
+# writes has to be named here. The leading `-` means "ignore if missing" - a
+# ReadWritePaths entry that does not exist otherwise fails the unit at start,
+# and neither of these exists on a fresh clone.
+ReadWritePaths=-/opt/syndix/node_modules/.cache
+ReadWritePaths=-/opt/syndix/.cache
+
+# Modest ceiling. The cycle is one short-lived Node process; this stops a
+# runaway from competing with whatever else this box is for.
+MemoryMax=1G
+CPUQuota=80%
+
+[Install]
+WantedBy=multi-user.target

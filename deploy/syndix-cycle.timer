@@ -1,0 +1,32 @@
+[Unit]
+Description=Run the Syndix publishing cycle every 6 hours
+Documentation=https://github.com/mrnetwork0001/syndix
+
+[Timer]
+# Four checks a day against a one-per-day on-chain cap.
+#
+# Checking more often than we can publish is deliberate. The cycle is cheap
+# when it refuses - a handful of RPC calls and no model spend - and the thing
+# it is watching for is a reader claim, which can land at any hour. Checking
+# once a day would mean news sitting unreported for up to 24 hours; checking
+# four times means the first check after something happens picks it up, and
+# SyndixPublisher refuses the rest of the day regardless of what this timer
+# thinks.
+#
+# So the cadence ceiling is enforced on chain, not here. Editing this file
+# cannot make Syndix publish more than once a day.
+OnCalendar=*-*-* 00,06,12,18:00:00
+
+# Spread the load and stop every deployment of this file from hitting GIWA at
+# exactly the same second.
+RandomizedDelaySec=900
+
+# If the box was down when a run was due, take it on the next boot rather than
+# silently skipping. The novelty gate decides whether it is still worth
+# publishing, so a late run is not a stale one.
+Persistent=true
+
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target
