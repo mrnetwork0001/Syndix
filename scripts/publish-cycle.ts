@@ -55,7 +55,18 @@ import { GIWA_RPC_FLASHBLOCKS, giwaSepolia } from "../lib/giwa";
 import { TRACKS } from "../lib/data/issues";
 import type { TrackId } from "../lib/types";
 
-const DRY_RUN = process.argv.includes("--dry-run");
+/**
+ * Dry run: measure, decide, generate, print the draft, write nothing.
+ *
+ * Settable from the environment as well as the command line so the systemd
+ * unit never has to change. Going live is then one edit to .env.local rather
+ * than editing a unit file and reloading the daemon - and, more to the point,
+ * turning publishing ON becomes a deliberate act in the file that holds the
+ * keys, not a flag buried in a service definition nobody reads twice.
+ */
+const DRY_RUN =
+  process.argv.includes("--dry-run") ||
+  /^(1|true|yes)$/i.test(process.env.SYNDIX_DRY_RUN?.trim() ?? "");
 
 /** Matches the studio's funding shape so automated issues are not second-class. */
 const REWARD_PER_READER_WEI = 30_000_000_000_000n;
@@ -112,7 +123,12 @@ function requireEnv(name: string): string {
 }
 
 async function main() {
-  if (DRY_RUN) log("start", "dry run - nothing will be written");
+  log(
+    "start",
+    DRY_RUN
+      ? "DRY RUN - a draft will be printed and nothing will be published"
+      : "LIVE - a passing draft will be published onchain",
+  );
 
   const publisherAddress = requireEnv(
     "NEXT_PUBLIC_SYNDIX_PUBLISHER",
@@ -277,8 +293,16 @@ async function main() {
   log("generate", `"${issue.title}" (${issue.body.length} chars)`);
 
   if (DRY_RUN) {
-    log("dry-run", "stopping before pin and publish");
-    process.stdout.write(`\n--- DRAFT ---\n${issue.title}\n\n${issue.standfirst}\n\n${issue.body}\n`);
+    log("dry-run", "stopping before pin and publish - review the draft below");
+    process.stdout.write(
+      `\n--- DRAFT (NOT PUBLISHED) ---\n` +
+        `TITLE: ${issue.title}\n\n` +
+        `STANDFIRST: ${issue.standfirst}\n\n` +
+        `SUBJECT: ${issue.subjectLine}\n` +
+        `SENTIMENT: ${issue.sentiment}  ENGAGEMENT: ${issue.engagementIndex}\n\n` +
+        `${issue.executiveSummary.map((s) => `- ${s}`).join("\n")}\n\n` +
+        `${issue.body}\n--- END DRAFT ---\n`,
+    );
     return;
   }
 

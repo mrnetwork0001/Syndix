@@ -133,6 +133,7 @@ running.
 | `SYNDIX_MODEL` | Optional; defaults to `deepseek-v4-pro`. Must support `response_format`. |
 | `PINATA_JWT` | Pinning the body. |
 | `PINATA_GATEWAY` | Reading the last issue's snapshot quickly. |
+| `SYNDIX_DRY_RUN` | Set to `1` to log drafts instead of publishing. Start here. |
 | `SYNDIX_TRACK` | Optional; defaults to `giwa-l2`. |
 
 **`PRIVATE_KEY` (the treasury owner) must NOT be on this box.** The whole point
@@ -151,6 +152,44 @@ sudo systemctl daemon-reload
 sudo rm -rf /opt/syndix
 sudo userdel syndix
 ```
+
+## Review mode, and going live
+
+Install with `SYNDIX_DRY_RUN=1` in `.env.local`. The timer still fires on
+schedule and the cycle still measures, gates and generates - it just prints the
+draft to the journal and stops before pinning or publishing.
+
+Do this first. Validation rejects a malformed issue, but nothing checks whether
+a well-formed one draws a conclusion its measurements support. Five defect
+classes have been found in live drafts so far and four of them would have been
+published under the checks that existed at the time; each was caught by a
+person reading the draft, and each fix came after the fact. The remaining known
+gap has no code guard at all: a draft once used round-trip latency, which
+measures distance to Seoul, to conclude that Flashblocks "operates within its
+documented preconfirmation window". That is a prompt rule now, and prompt rules
+get ignored - the em dash ban was in the prompt and was broken anyway.
+
+Read the drafts:
+
+```bash
+journalctl -u syndix-cycle.service --since today | sed -n '/DRAFT (NOT PUBLISHED)/,/END DRAFT/p'
+```
+
+Publish one you like, by hand:
+
+```bash
+cd /opt/syndix && sudo -u syndix env SYNDIX_DRY_RUN=0 npm run cycle
+```
+
+When a week of drafts has gone by without surprising you, remove the line:
+
+```bash
+sudo -u syndix sed -i '/^SYNDIX_DRY_RUN=/d' /opt/syndix/.env.local
+sudo -u syndix bash scripts/preflight.sh    # confirms it now says WILL PUBLISH
+```
+
+No `daemon-reload` needed - the unit reads the environment file each run, which
+is why the mode lives there rather than in `ExecStart`.
 
 ## Operating
 

@@ -148,6 +148,25 @@ else
   warn ".env.local not found - copy .env.example and fill it in"
 fi
 
+head_ "Publishing mode"
+
+# Asymmetric risk: publishing by accident is permanent, not publishing is not.
+# So the mode is stated plainly rather than left to be inferred from an absent
+# variable.
+if [ -f .env.local ]; then
+  DRY="$(grep -E '^SYNDIX_DRY_RUN=' .env.local 2>/dev/null | cut -d= -f2- | tr -d '"'"'"'[:space:]')"
+  case "$DRY" in
+    1|true|TRUE|yes|YES)
+      ok "SYNDIX_DRY_RUN=$DRY - drafts are logged, NOTHING is published" ;;
+    "")
+      warn "SYNDIX_DRY_RUN is not set, so this box WILL PUBLISH onchain."
+      warn "Set SYNDIX_DRY_RUN=1 to log drafts for review instead." ;;
+    *)
+      warn "SYNDIX_DRY_RUN=$DRY is not a truthy value, so this box WILL PUBLISH."
+      warn "Use 1, true or yes to keep it in review mode." ;;
+  esac
+fi
+
 head_ "Result"
 printf '  %d passed, %d warnings, %d failures\n\n' "$PASS" "$WARN" "$FAIL"
 
