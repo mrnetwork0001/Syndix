@@ -95,6 +95,48 @@ describe("validateGeneratedIssue", () => {
     expect(problems).toEqual([]);
   });
 
+  it("rejects a wei amount restated in words", () => {
+    // Live defect: 2,840,000,000,000,000 wei called "2.84 trillion wei",
+    // wrong by 1000x, in a draft whose every other figure was exact.
+    const problems = validateGeneratedIssue({
+      ...VALID,
+      body: VALID.body + "\n\nThe treasury holds 2.84 trillion wei in reserve.",
+    });
+    expect(problems.join(" ")).toContain("in words");
+  });
+
+  it("accepts wei amounts written as digits", () => {
+    const problems = validateGeneratedIssue({
+      ...VALID,
+      body: VALID.body + "\n\nThe treasury holds 2,840,000,000,000,000 wei in reserve.",
+    });
+    expect(problems).toEqual([]);
+  });
+
+  it("rejects placeholder or error text in place of a headline", () => {
+    // Live defect: deepseek-v4-pro returned "POLL ERROR: No valid title
+    // context" as the title, with a correct body. Length checks passed it.
+    expect(
+      validateGeneratedIssue({ ...VALID, title: "POLL ERROR: No valid title context" })
+        .join(" "),
+    ).toContain("placeholder or error text");
+    expect(
+      validateGeneratedIssue({ ...VALID, standfirst: "No valid standfirst context here" })
+        .join(" "),
+    ).toContain("placeholder or error text");
+  });
+
+  it("does not flag a legitimate headline that mentions errors", () => {
+    // "Error" belongs in a headline about errors; only the give-up shapes
+    // should trip the check.
+    expect(
+      validateGeneratedIssue({
+        ...VALID,
+        title: "GIWA standard RPC returns 503 errors under sustained load",
+      }),
+    ).toEqual([]);
+  });
+
   it("collects every problem rather than stopping at the first", () => {
     const problems = validateGeneratedIssue({ title: "x", sentiment: "nope" });
     expect(problems.length).toBeGreaterThan(3);

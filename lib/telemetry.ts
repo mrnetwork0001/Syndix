@@ -379,7 +379,7 @@ export function telemetryDigest(t: ChainTelemetry): string {
     // result, not a finding, and the wording has to stop anyone reporting a
     // few milliseconds of noise as a performance difference.
     lines.push(
-      `- [round-trip] ${l.label}: p50 ${l.p50Ms}ms, p95 ${l.p95Ms}ms across ${l.samples} sequential eth_getBlockByNumber calls from this run's host. This is network flight time to the RPC, dominated by distance to Seoul. It is NOT preconfirmation latency and must not be described as one; the two endpoints are expected to match here.`,
+      `- [round-trip] ${l.label}: p50 ${l.p50Ms}ms, p95 ${l.p95Ms}ms across ${l.samples} sequential eth_getBlockByNumber calls from this run's host. This is network flight time to the RPC, dominated by distance to Seoul. It is NOT preconfirmation latency and must not be described as one; the two endpoints are expected to match here. NEVER compare this figure against the documented 200ms preconfirmation number - they measure different things, and a round-trip that happens to land under 200ms says nothing whatsoever about whether preconfirmations met their target.`,
     );
   }
   for (const a of t.advance) {
@@ -417,7 +417,7 @@ export function telemetryDigest(t: ChainTelemetry): string {
     // first live run cited "up to 200ms" from its own knowledge in violation of
     // the only-listed-figures rule; the honest fix is to list it, labelled.
     lines.push(
-      `- [documented] GIWA's documentation states Flashblocks preconfirmations arrive in up to 200ms. This is GIWA's published claim, not something measured this run - cite it only with that attribution, e.g. "GIWA documents up to 200ms".`,
+      `- [documented] GIWA's documentation states Flashblocks preconfirmations arrive in up to 200ms. This is GIWA's published claim, not something measured this run - cite it only with that attribution, e.g. "GIWA documents up to 200ms". Nothing in this run measures preconfirmation latency, so you may NOT conclude that the figure was met, missed, or "operated within". State it as context and move on.`,
     );
   }
 

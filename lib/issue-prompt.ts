@@ -42,6 +42,16 @@ broke:
 - Name onchain mechanisms only as the signals name them. The reader claim is
   SyndixTreasury's claimReaderReward; do not attribute it to EAS, ERC standards
   or anything else the signals do not say.
+- Write wei amounts as the digits given. Never restate one in words - not
+  "2.84 trillion wei", not "6.5 quadrillion", not "roughly 0.0028 ETH". A draft
+  called 2,840,000,000,000,000 wei "2.84 trillion" and was wrong by a factor of
+  a thousand. If a magnitude helps the reader, give the digits and say what it
+  buys instead.
+- Do not judge whether a documented figure was met. This run measures network
+  round-trip time and state freshness; neither is preconfirmation latency, so
+  no combination of them supports "within the documented window", "meeting its
+  target" or any equivalent. Report what was measured and attribute what was
+  documented, separately.
 
 ${telemetryDigest(telemetry)}
 

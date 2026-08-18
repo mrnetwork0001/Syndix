@@ -115,6 +115,46 @@ export function validateGeneratedIssue(value: unknown): string[] {
     }
   }
 
+  // Placeholder or error text where prose belongs. Observed live: a title of
+  // "POLL ERROR: No valid title context" and a matching standfirst, in a
+  // response whose body was otherwise correct. Length checks passed it because
+  // it is a perfectly long string.
+  //
+  // Anchored deliberately. "Error" can appear legitimately in a headline about
+  // errors, so this matches only the shapes a model emits when it has given up:
+  // a leading ERROR token, or an explicit "no valid X" admission.
+  for (const field of ["title", "standfirst", "subjectLine"]) {
+    const text = v[field];
+    if (typeof text !== "string") continue;
+    if (
+      /^\s*(?:\w+\s+)?ERROR\b/i.test(text) ||
+      /\bno valid \w+ context\b/i.test(text) ||
+      /^\s*(?:N\/A|null|undefined|TODO|PLACEHOLDER)\b/i.test(text)
+    ) {
+      problems.push(`${field} is placeholder or error text: "${text.slice(0, 44)}"`);
+    }
+  }
+
+  // A wei amount restated in words. Observed live: 2,840,000,000,000,000 wei
+  // described as "2.84 trillion wei", wrong by a factor of a thousand, in a
+  // draft whose every other figure was exact. The prompt forbids it and the
+  // model did it anyway, which is the argument for checking rather than asking.
+  //
+  // Safe to match: these issues quote wei as digits, so a magnitude word
+  // immediately before "wei" is the error itself and not a false positive.
+  for (const field of ["title", "standfirst", "subjectLine", "body"]) {
+    const text = v[field];
+    if (typeof text !== "string") continue;
+    const worded = text.match(
+      /\b(?:thousand|million|billion|trillion|quadrillion)\s+wei\b/i,
+    );
+    if (worded) {
+      problems.push(
+        `${field} states a wei amount in words ("${worded[0]}") instead of digits`,
+      );
+    }
+  }
+
   // NOT CHECKED HERE: whitespace collapsing mid-sentence, e.g. the
   // "documentedspecof200ms" a live glm-5.2 run produced. It resists a reliable
   // regex - a length threshold loose enough to catch it also matches every
