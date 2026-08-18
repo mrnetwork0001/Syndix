@@ -17,10 +17,10 @@ import {
 import { ISSUES, TRACKS } from "@/lib/data/issues";
 import {
   collectTelemetry,
-  telemetryDigest,
   type ChainTelemetry,
 } from "@/lib/telemetry";
 import { telemetrySnapshot } from "@/lib/novelty";
+import { buildIssueUserPrompt } from "@/lib/issue-prompt";
 import type { AgentLogLine, AgentStage, TrackId } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -93,12 +93,6 @@ async function runLive(
    * latency benchmark nobody had ever run. The prompt already forbade inventing
    * figures and the model was obeying it; the signals were the lie.
    */
-  const signalDigest = telemetryDigest(telemetry);
-
-  const headline = telemetry.blockNumber
-    ? `Live GIWA Sepolia head: block ${telemetry.blockNumber}, measured at ${telemetry.takenAt}.`
-    : "Live head state was unavailable this run; do not cite a block height.";
-
   const stream = await client.chat.completions.create({
     model,
     stream: true,
@@ -106,32 +100,7 @@ async function runLive(
     response_format: { type: "json_schema", json_schema: ISSUE_JSON_SCHEMA },
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
-      {
-        role: "user",
-        content: `Write today's Syndix issue for the "${trackLabel}" track.
-
-${headline}
-
-Signals measured this run - these are the ONLY figures you may cite. Every one
-was sampled or read from chain moments ago. Do not introduce any other number,
-benchmark, percentage or measurement from any source, including your own
-knowledge. If a claim needs a figure that is not listed below, make the claim
-qualitatively or leave it out. Additional rules, each of which a previous draft
-broke:
-
-- Copy figures exactly as listed; do not round, adjust or re-derive them.
-- Simple ratios of listed figures are allowed only if you show the division.
-- Never report a count of polls, failures, duplicates or repeats unless that
-  exact count is listed. Not by subtraction, not by estimate. The listed poll
-  totals and distinct-state counts are the only poll figures that may appear.
-- Name onchain mechanisms only as the signals name them. The reader claim is
-  SyndixTreasury's claimReaderReward; do not attribute it to EAS, ERC standards
-  or anything else the signals do not say.
-
-${signalDigest}
-
-Return JSON matching the required schema.`,
-      },
+      { role: "user", content: buildIssueUserPrompt(trackLabel, telemetry) },
     ],
   });
 
