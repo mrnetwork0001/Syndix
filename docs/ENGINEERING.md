@@ -51,7 +51,7 @@ npm run check             # typecheck + lint + build + contracts:test
 Next.js 16 (App Router) · React 19 · TypeScript strict · Tailwind CSS v4 · wagmi v3 · viem v2 ·
 motion v12 (`import { motion } from "motion/react"`) · lucide-react · recharts ·
 react-markdown + remark-gfm · Foundry (Solidity 0.8.24, OpenZeppelin v5) ·
-`openai` v7 pointed at the **0G Compute Router** with **`glm-5.2`** (override via `SYNDIX_MODEL`). Structured Outputs
+`openai` v7 pointed at the **0G Compute Router** with **`deepseek-v4-pro`** (override via `SYNDIX_MODEL`). Structured Outputs
 with `strict: true` - every property must be in `required` and every object needs
 `additionalProperties: false`, or the request is rejected.
 

@@ -45,5 +45,16 @@ broke:
 
 ${telemetryDigest(telemetry)}
 
+Format of the "body" field - this is the article itself:
+
+- It is GitHub-flavoured MARKDOWN PROSE. It is NOT JSON. Do not put an object,
+  an array, or key/value pairs inside it. The surrounding response is JSON; the
+  body field's contents are the rendered article a person reads.
+- Open with an "## " heading and use "## " and "### " headings throughout.
+  Never use "# " - the title renders separately above the body.
+- 600-900 words, with at least one list, and a table or fenced code block where
+  it earns its place.
+- Ordinary sentences with spaces between words.
+
 Return JSON matching the required schema.`;
 }

@@ -10,6 +10,7 @@ import {
   inferenceProviderLabel,
   assertModelSupported,
   validateGeneratedIssue,
+  normalizeIssueProse,
   type GeneratedIssue,
 } from "@/lib/openai";
 import {
@@ -157,7 +158,7 @@ async function runLive(
   if (problems.length > 0) {
     throw new Error(`Model returned an incomplete issue: ${problems.join("; ")}`);
   }
-  const parsed = candidate as GeneratedIssue;
+  const parsed = normalizeIssueProse(candidate as GeneratedIssue);
 
   emit({
     type: "log",

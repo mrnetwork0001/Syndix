@@ -47,6 +47,7 @@ import {
   inferenceProviderLabel,
   assertModelSupported,
   validateGeneratedIssue,
+  normalizeIssueProse,
   type GeneratedIssue,
 } from "../lib/openai";
 import { hasPinataKey, pinIssueMetadata } from "../lib/ipfs";
@@ -180,8 +181,15 @@ async function main() {
   // real money, and spending them on an issue the contract will refuse to
   // accept is pure waste.
   if (remaining === 0) {
-    log("allowance", "daily cap already used; skipping this cycle");
-    return;
+    // A dry run writes nothing, so the on-chain allowance is information here
+    // rather than a limit. Stopping would make the pipeline untestable for the
+    // rest of the day every time it publishes, which is exactly when you most
+    // want to check it still works.
+    if (!DRY_RUN) {
+      log("allowance", "daily cap already used; skipping this cycle");
+      return;
+    }
+    log("allowance", "daily cap already used - a real run would stop here");
   }
   if (pool > poolCap) {
     die(
@@ -221,11 +229,17 @@ async function main() {
     { role: "user" as const, content: buildIssueUserPrompt(trackLabel, telemetry) },
   ];
 
-  // Two attempts. One bad response is worth retrying; two means something is
-  // wrong with the model or the prompt, and publishing a malformed issue is
-  // permanent in a way that skipping a day is not.
+  // Three attempts.
+  //
+  // Measured on the 0G router: `strict: true` is not fully honoured, and a
+  // required field - executiveSummary in every observed case - intermittently
+  // comes back empty. Retrying clears it; the same prompt succeeded on a later
+  // attempt every time it was tried. Three is chosen because each attempt is
+  // roughly a minute and a cron has the time, not because the third is
+  // special. If all three fail, the day is skipped, which is recoverable in a
+  // way that publishing a malformed issue is not.
   let issue: GeneratedIssue | null = null;
-  for (let attempt = 1; attempt <= 2 && !issue; attempt++) {
+  for (let attempt = 1; attempt <= 3 && !issue; attempt++) {
     const completion = await inferenceClient().chat.completions.create({
       model: inferenceModel(),
       response_format: { type: "json_schema", json_schema: ISSUE_JSON_SCHEMA },
@@ -256,10 +270,10 @@ async function main() {
       log("generate", `attempt ${attempt} failed validation: ${problems.join("; ")}`);
       continue;
     }
-    issue = parsed as GeneratedIssue;
+    issue = normalizeIssueProse(parsed as GeneratedIssue);
   }
 
-  if (!issue) die("generate", "no usable issue after 2 attempts; skipping rather than publishing a malformed one");
+  if (!issue) die("generate", "no usable issue after 3 attempts; skipping rather than publishing a malformed one");
   log("generate", `"${issue.title}" (${issue.body.length} chars)`);
 
   if (DRY_RUN) {

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { validateGeneratedIssue } from "@/lib/openai";
+import { validateGeneratedIssue, normalizeIssueProse } from "@/lib/openai";
 
 /**
  * Two concerns, both about not publishing something broken.
@@ -19,7 +19,18 @@ const VALID = {
   sentiment: "neutral",
   engagementIndex: 72,
   executiveSummary: ["Pending tag led sealed 28 to 9.", "Treasury solvent."],
-  body: "x".repeat(500),
+  body: [
+    "## Flashblocks freshness",
+    "",
+    "Over the same polling window the pending tag produced 28 distinct chain",
+    "states to the sealed tag's 9. A state is a block number, transaction count",
+    "and state root taken together.",
+    "",
+    "### Treasury",
+    "",
+    "The solvency invariant holds: balance exceeds the amount reserved for",
+    "readers, which the owner cannot reach. " + "Reader claims settle onchain. ".repeat(6),
+  ].join("\n"),
 };
 
 describe("validateGeneratedIssue", () => {
@@ -45,18 +56,43 @@ describe("validateGeneratedIssue", () => {
   });
 
   it("rejects an out-of-range engagement index", () => {
-    expect(validateGeneratedIssue({ ...VALID, engagementIndex: 340 }).length).toBe(1);
-    expect(validateGeneratedIssue({ ...VALID, engagementIndex: "72" }).length).toBe(1);
+    expect(validateGeneratedIssue({ ...VALID, engagementIndex: 340 }).join(" ")).toContain("engagementIndex");
+    expect(validateGeneratedIssue({ ...VALID, engagementIndex: "72" }).join(" ")).toContain("engagementIndex");
   });
 
   it("rejects an empty or blank executive summary", () => {
-    expect(validateGeneratedIssue({ ...VALID, executiveSummary: [] }).length).toBe(1);
-    expect(validateGeneratedIssue({ ...VALID, executiveSummary: ["  "] }).length).toBe(1);
+    expect(validateGeneratedIssue({ ...VALID, executiveSummary: [] }).join(" ")).toContain("executiveSummary");
+    expect(validateGeneratedIssue({ ...VALID, executiveSummary: ["  "] }).join(" ")).toContain("executiveSummary");
   });
 
   it("rejects a non-object without throwing", () => {
     expect(validateGeneratedIssue(null)).toEqual(["not an object"]);
     expect(validateGeneratedIssue("a string")).toEqual(["not an object"]);
+  });
+
+  it("rejects a body that is JSON rather than Markdown", () => {
+    // Seen live from glm-5.2: every field present and long enough, so the
+    // shape checks passed while the article itself was a JSON document.
+    const problems = validateGeneratedIssue({
+      ...VALID,
+      body: JSON.stringify({ headline: "x", sections: [{ title: "a", body: "b".repeat(500) }] }),
+    });
+    expect(problems.join(" ")).toContain("JSON, not Markdown");
+  });
+
+  it("accepts a body full of addresses, hashes and CIDs", () => {
+    // Guards a check that was removed: a length-based run-together detector
+    // flagged every contract address, transaction hash and IPFS CID while
+    // missing the corruption it was written for. These belong in issues.
+    const problems = validateGeneratedIssue({
+      ...VALID,
+      body:
+        VALID.body +
+        "\n\nTreasury 0x5465f31a6155E3eCCcC35f4E5bDC0e287763B0ee, published in " +
+        "0x8f4d81ed9950353a94a6dd928a1192b854aca6b8d781556445f213309e284ff4, body at " +
+        "ipfs://bafkreifp4zjnndgnbxyrm43yozpobsyc6kjxgpdzirblrkaqbhgnoj3n4i.",
+    });
+    expect(problems).toEqual([]);
   });
 
   it("collects every problem rather than stopping at the first", () => {
@@ -107,7 +143,7 @@ describe("model selection", () => {
     // not exist on the router, and sending it there fails at request time.
     process.env.ZG_API_KEY = "test";
     process.env.OPENAI_MODEL = "gpt-4.1";
-    expect(inferenceModel()).toBe("glm-5.2");
+    expect(inferenceModel()).toBe("deepseek-v4-pro");
   });
 
   it("still honours OPENAI_MODEL when talking to OpenAI", async () => {
@@ -123,6 +159,41 @@ describe("model selection", () => {
     expect(inferenceProvider()).toBe("openai");
     process.env.ZG_API_KEY = "test";
     expect(inferenceProvider()).toBe("0g");
-    expect(inferenceModel()).toBe("glm-5.2");
+    expect(inferenceModel()).toBe("deepseek-v4-pro");
+  });
+});
+
+describe("normalizeIssueProse", () => {
+  it("replaces em dashes with a spaced hyphen", () => {
+    // The system prompt forbids them and deepseek-v4-pro uses them anyway.
+    // Retrying on punctuation wastes an attempt; the fix is deterministic.
+    const out = normalizeIssueProse({
+      body: "Flashblocks preconfirm in 200ms\u2014per GIWA's docs\u2014not measured here.",
+    });
+    expect(out.body).not.toMatch(/[\u2014\u2013]/);
+    expect(out.body).toContain("200ms - per GIWA");
+  });
+
+  it("normalises smart quotes and on-chain spelling", () => {
+    const out = normalizeIssueProse({
+      standfirst: "GIWA\u2019s on-chain record \u201Cholds\u201D today\u2026",
+    });
+    expect(out.standfirst).toBe("GIWA's onchain record \"holds\" today...");
+  });
+
+  it("normalises inside arrays as well as strings", () => {
+    const out = normalizeIssueProse({
+      executiveSummary: ["Treasury solvent\u2014invariant holds.", "Second point."],
+    });
+    expect(out.executiveSummary[0]).toBe("Treasury solvent - invariant holds.");
+  });
+
+  it("leaves hyphenated words and numbers alone", () => {
+    const out = normalizeIssueProse({
+      body: "A well-known 180313-gas claim costs 180,361,684,510 wei at 1,000,270 wei/gas.",
+    });
+    expect(out.body).toBe(
+      "A well-known 180313-gas claim costs 180,361,684,510 wei at 1,000,270 wei/gas.",
+    );
   });
 });

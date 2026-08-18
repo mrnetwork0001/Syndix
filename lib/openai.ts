@@ -101,6 +101,28 @@ export function validateGeneratedIssue(value: unknown): string[] {
   // though a stub is a valid string as far as the schema is concerned.
   str("body", 400);
 
+  const body = typeof v.body === "string" ? v.body.trim() : "";
+  if (body) {
+    // Observed from glm-5.2: a schema-valid response whose `body` was a JSON
+    // document rather than prose. Every field was present and long enough, so
+    // shape checks passed while the article was unpublishable. The schema
+    // constrains the envelope; only this constrains the contents.
+    if (body.startsWith("{") || body.startsWith("[")) {
+      problems.push("body is JSON, not Markdown prose");
+    }
+    if (!/^##\s/m.test(body)) {
+      problems.push("body has no h2 heading, so it is not the requested Markdown structure");
+    }
+  }
+
+  // NOT CHECKED HERE: whitespace collapsing mid-sentence, e.g. the
+  // "documentedspecof200ms" a live glm-5.2 run produced. It resists a reliable
+  // regex - a length threshold loose enough to catch it also matches every
+  // contract address (42 chars), transaction hash (66) and IPFS CID (59), all
+  // of which belong in these issues. The first attempt at this check flagged
+  // all three and caught neither real defect. Prose quality is a reason to
+  // change model, not something to bolt a lossy detector onto.
+
   if (!["bullish", "neutral", "cautious"].includes(String(v.sentiment))) {
     problems.push(`sentiment "${String(v.sentiment)}" is not one of bullish|neutral|cautious`);
   }
@@ -116,6 +138,43 @@ export function validateGeneratedIssue(value: unknown): string[] {
   }
 
   return problems;
+}
+
+/**
+ * Applies house style that a model cannot be relied on to apply itself.
+ *
+ * The system prompt asks for plain hyphens and "onchain"; gpt-4.1 obeyed,
+ * deepseek-v4-pro does not and fills a draft with em dashes. Retrying would
+ * spend an attempt on punctuation, which is a waste when the transformation is
+ * deterministic and changes no meaning.
+ *
+ * Strictly cosmetic. Nothing here touches a number, a claim or a citation - it
+ * substitutes characters and spelling only, so a normalised issue says exactly
+ * what the model said.
+ */
+export function normalizeIssueProse<T extends object>(issue: T): T {
+  const fix = (text: string): string =>
+    text
+      // Em and en dashes to a spaced hyphen, without disturbing a hyphenated
+      // word or a minus sign.
+      .replace(/\s*[\u2014\u2013]\s*/g, " - ")
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/\u2026/g, "...")
+      // Non-breaking and other exotic spaces read as normal spaces but break
+      // string matching and diffing later.
+      .replace(/[\u00A0\u2007\u202F]/g, " ")
+      .replace(/\bon-chain\b/g, "onchain")
+      .replace(/\bOn-chain\b/g, "Onchain");
+
+  const out = { ...issue } as Record<string, unknown>;
+  for (const [key, value] of Object.entries(out)) {
+    if (typeof value === "string") out[key] = fix(value);
+    else if (Array.isArray(value)) {
+      out[key] = value.map((v) => (typeof v === "string" ? fix(v) : v));
+    }
+  }
+  return out as T;
 }
 
 export interface GeneratedIssue {

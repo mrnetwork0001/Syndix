@@ -131,11 +131,11 @@ if [ -f .env.local ]; then
   if grep -qE '^ZG_API_KEY=.' .env.local 2>/dev/null; then
     ok "ZG_API_KEY set (generating via 0G Compute)"
     MODEL="$(grep -E '^SYNDIX_MODEL=' .env.local 2>/dev/null | cut -d= -f2- | tr -d '"'"'"'[:space:]')"
-    MODEL="${MODEL:-glm-5.2}"
+    MODEL="${MODEL:-deepseek-v4-pro}"
     case "$MODEL" in
       gpt-*|claude-*|minimax-*|kimi-k2*)
         bad "SYNDIX_MODEL=$MODEL does not support response_format on the router."
-        bad "Issue generation requires it. Use glm-5.2, deepseek-v4-pro or qwen3.8-max." ;;
+        bad "Issue generation requires it. Use deepseek-v4-pro or glm-5.2." ;;
       *)
         ok "SYNDIX_MODEL=$MODEL" ;;
     esac

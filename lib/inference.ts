@@ -39,10 +39,26 @@ import OpenAI from "openai";
 export const ZG_ROUTER_BASE_URL = "https://router-api.0g.ai/v1";
 
 /**
- * TEE-attested, supports response_format, and the cheapest of the models that
- * do. Override with SYNDIX_MODEL - but check the catalogue first.
+ * Chosen by measurement, not by price.
+ *
+ * glm-5.2 was the first default because it is cheapest, and it did not hold up:
+ * across live runs it returned a JSON document in the `body` field, then an
+ * empty `executiveSummary`, then an out-of-range `engagementIndex`, and it
+ * burned 11k reasoning tokens taking 170s to do it. glm-5.3 returned
+ * unparseable output.
+ *
+ * deepseek-v4-pro produced a clean, correct issue - every figure reconciled
+ * against the treasury, the documented 200ms properly attributed to GIWA
+ * rather than claimed as measured - in ~60s using no reasoning tokens, which
+ * makes it both more reliable and cheaper per issue despite the higher headline
+ * rate.
+ *
+ * It is not perfect: `strict: true` is not fully honoured by the router, and a
+ * required field intermittently comes back empty, which is why the cycle
+ * retries. Override with SYNDIX_MODEL - but check the catalogue first, and
+ * measure before trusting a cheaper number.
  */
-export const DEFAULT_MODEL = "glm-5.2";
+export const DEFAULT_MODEL = "deepseek-v4-pro";
 
 /**
  * Models confirmed to accept `response_format` from the live catalogue.
