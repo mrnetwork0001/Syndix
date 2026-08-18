@@ -109,7 +109,8 @@ and the feed is empty.
 Every live issue went through this path with no hand-authored step:
 
 1. **Scan.** Read GIWA head state and gas price from the Flashblocks RPC.
-2. **Generate.** `gpt-4.1` writes the issue against a strict JSON schema, seeded with the
+2. **Generate.** `glm-5.2`, running TEE-attested on the 0G Compute Router, writes the issue
+   against a strict JSON schema, seeded with the
    measured onchain signals.
 3. **Pin.** Body and metadata go to IPFS via Pinata, yielding a real CID. Publishing is
    *blocked* if pinning fails: an onchain pointer to nothing is worse than no pointer.
@@ -358,7 +359,7 @@ token treasury would be stuck, so it cannot arrive.
 GIWA head state + ecosystem signals
           │
           ▼
-   Ingestion agent  ──────────►  gpt-4.1 synthesis, strict JSON schema
+   Ingestion agent  ──────────►  glm-5.2 on 0G Compute, strict JSON schema
    (Flashblocks RPC)              (app/api/agent/run/route.ts, NDJSON stream)
           │
           ▼
@@ -471,8 +472,8 @@ Stated plainly, because a grant reviewer should not have to guess:
 | --- | --- |
 | Smart contracts | **Real.** Solidity 0.8.24, 101 passing Foundry tests including three fuzzed solvency invariants. |
 | GIWA chain reads | **Real.** Live head state and gas price from the Flashblocks RPC on every run, verifiable on the explorer. |
-| Issue content | **Real.** Written by `gpt-4.1` against live chain state, pinned to IPFS, read back from the treasury index. The app bundles no article bodies. |
-| AI issue generation | **Real.** Every live issue was written by `gpt-4.1` against a strict JSON schema, streamed, Structured Outputs with `strict: true`. Each records its model in the IPFS metadata the treasury points at, so the claim is checkable. A clone without `OPENAI_API_KEY` replays a recorded pipeline and the studio badges itself "Simulated". |
+| Issue content | **Real.** Written by `glm-5.2` on the 0G Compute Router against live chain state, pinned to IPFS, read back from the treasury index. The app bundles no article bodies. |
+| AI issue generation | **Real.** Issues are written by `glm-5.2` on the 0G Compute Router against a strict JSON schema, with Structured Outputs. Each issue records both its model and the network that ran it in the IPFS metadata the treasury points at. The default model is TEE-attested, so the provenance claim is checkable rather than trusted. Issues 1-11 predate the switch and were written by `gpt-4.1`; their metadata says so. A clone with no inference key replays a recorded pipeline and the studio badges itself "Simulated". |
 | Reward claim flow | **Real.** Attested by `/api/attest`, submitted by the reader, settled on GIWA Sepolia. |
 | Proof of read | **Real, and server-measured.** Elapsed time comes from the server's clock via a signed session; scroll depth and heartbeat cadence are enforced. It proves time and scrolling, not comprehension. |
 | up.id identity | **Real, and not ours.** Gated on the live ecosystem registry: a wallet with no genuine `up.id` cannot claim, and Syndix has no power to issue one to anybody, itself included. |
@@ -579,8 +580,8 @@ nothing is moderated. A quality-flagging layer would quietly retract that.
 ## Stack
 
 Next.js 16 (App Router) · React 19 · TypeScript strict · Tailwind CSS v4 · wagmi v3 ·
-viem v2 · motion · recharts · Foundry + OpenZeppelin v5 · `openai` (`gpt-4.1`,
-configurable via `OPENAI_MODEL`).
+viem v2 · motion · recharts · Foundry + OpenZeppelin v5 · `openai` v7 pointed at the
+0G Compute Router (`glm-5.2`, configurable via `SYNDIX_MODEL`).
 
 The design system lives entirely in `app/globals.css` as Tailwind v4 `@theme` tokens, with
 no hard-coded hex values in components.

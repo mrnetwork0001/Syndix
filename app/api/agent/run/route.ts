@@ -4,9 +4,12 @@ import { AGENT_RUN_SCRIPT } from "@/lib/data/protocol";
 import {
   ISSUE_JSON_SCHEMA,
   SYSTEM_PROMPT,
-  hasOpenAIKey,
-  openaiClient,
-  openaiModel,
+  hasInferenceKey,
+  inferenceClient,
+  inferenceModel,
+  inferenceProviderLabel,
+  assertModelSupported,
+  validateGeneratedIssue,
   type GeneratedIssue,
 } from "@/lib/openai";
 import {
@@ -69,8 +72,11 @@ async function runLive(
   startedAt: number,
   telemetry: ChainTelemetry,
 ): Promise<GeneratedIssue> {
-  const client = openaiClient();
-  const model = openaiModel();
+  // A model without response_format support fails one paid request later, and
+  // the error reads like bad JSON rather than a misconfiguration.
+  assertModelSupported();
+  const client = inferenceClient();
+  const model = inferenceModel();
   const trackLabel = TRACKS.find((t) => t.id === track)?.label ?? track;
 
   emit({
@@ -79,7 +85,7 @@ async function runLive(
       Date.now() - startedAt,
       "synthesizing",
       "info",
-      `Dispatching synthesis to ${model}`,
+      `Dispatching synthesis to ${inferenceProviderLabel()}`,
       trackLabel,
     ),
   });
@@ -137,12 +143,21 @@ async function runLive(
     }
   }
 
-  let parsed: GeneratedIssue;
+  let candidate: unknown;
   try {
-    parsed = JSON.parse(text) as GeneratedIssue;
+    candidate = JSON.parse(text);
   } catch {
     throw new Error("Model returned a response that was not valid JSON.");
   }
+
+  // The studio has a human reading the draft, so this surfaces the problem
+  // rather than retrying silently - but a malformed issue must never reach the
+  // publish button looking complete.
+  const problems = validateGeneratedIssue(candidate);
+  if (problems.length > 0) {
+    throw new Error(`Model returned an incomplete issue: ${problems.join("; ")}`);
+  }
+  const parsed = candidate as GeneratedIssue;
 
   emit({
     type: "log",
@@ -199,7 +214,7 @@ export async function POST(request: NextRequest) {
     // Empty or malformed body is fine - fall back to the default track.
   }
 
-  const hasKey = hasOpenAIKey();
+  const hasKey = hasInferenceKey();
   const startedAt = Date.now();
   const encoder = new TextEncoder();
   const controller = new AbortController();
@@ -310,7 +325,11 @@ export async function POST(request: NextRequest) {
                 { trait_type: "Track", value: track },
                 { trait_type: "Sentiment", value: generated.sentiment },
                 { trait_type: "Engagement index", value: generated.engagementIndex },
-                { trait_type: "Model", value: openaiModel() },
+                { trait_type: "Model", value: inferenceModel() },
+              // Which network actually ran the inference. The 0G
+              // default is TEE-attested, so this is a claim that can
+              // be checked rather than one that must be believed.
+              { trait_type: "Inference", value: inferenceProviderLabel() },
                 ...(telemetry.blockNumber
                   ? [
                       {

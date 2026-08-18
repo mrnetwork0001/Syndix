@@ -1,26 +1,19 @@
-import OpenAI from "openai";
-
 /**
- * OpenAI client + the issue-generation contract.
+ * The issue-generation contract: schema, system prompt, and validation.
  *
- * The model is configurable because model ids move faster than this repo does.
- * `OPENAI_MODEL` overrides the default; if the default is ever retired the
- * agent route surfaces the API's own error rather than silently degrading.
+ * Which model runs it and where the request goes lives in lib/inference.ts -
+ * Syndix generates through the 0G Compute Router rather than a vendor API, so
+ * "the OpenAI client" stopped being an accurate name for that concern.
  */
 
-export const DEFAULT_OPENAI_MODEL = "gpt-4.1";
-
-export function openaiModel(): string {
-  return process.env.OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
-}
-
-export function hasOpenAIKey(): boolean {
-  return Boolean(process.env.OPENAI_API_KEY?.trim());
-}
-
-export function openaiClient(): OpenAI {
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-}
+export {
+  hasInferenceKey,
+  inferenceClient,
+  inferenceModel,
+  inferenceProvider,
+  inferenceProviderLabel,
+  assertModelSupported,
+} from "./inference";
 
 /**
  * Structured Outputs schema for a generated issue.
@@ -78,6 +71,52 @@ export const ISSUE_JSON_SCHEMA = {
     ],
   },
 } as const;
+
+/**
+ * Checks a parsed response really is an issue.
+ *
+ * `response_format` constrains the shape but is not a guarantee across every
+ * model on the router, and the models that accept it are not all equally
+ * literal about it. A missing `body` or an empty `title` that reached IPFS and
+ * then a contract would be permanent, so the cheap check happens here instead.
+ *
+ * Returns the reasons it failed rather than throwing, so the caller can put
+ * them in a log line and retry.
+ */
+export function validateGeneratedIssue(value: unknown): string[] {
+  const problems: string[] = [];
+  if (typeof value !== "object" || value === null) return ["not an object"];
+  const v = value as Record<string, unknown>;
+
+  const str = (k: string, min: number) => {
+    const s = v[k];
+    if (typeof s !== "string") problems.push(`${k} is ${typeof s}, expected string`);
+    else if (s.trim().length < min) problems.push(`${k} is shorter than ${min} characters`);
+  };
+
+  str("title", 8);
+  str("standfirst", 16);
+  str("subjectLine", 8);
+  // The body is the article. A model that returns a stub has failed, even
+  // though a stub is a valid string as far as the schema is concerned.
+  str("body", 400);
+
+  if (!["bullish", "neutral", "cautious"].includes(String(v.sentiment))) {
+    problems.push(`sentiment "${String(v.sentiment)}" is not one of bullish|neutral|cautious`);
+  }
+  const idx = v.engagementIndex;
+  if (typeof idx !== "number" || !Number.isFinite(idx) || idx < 0 || idx > 100) {
+    problems.push("engagementIndex is not a number between 0 and 100");
+  }
+  const summary = v.executiveSummary;
+  if (!Array.isArray(summary) || summary.length === 0) {
+    problems.push("executiveSummary is missing or empty");
+  } else if (!summary.every((x) => typeof x === "string" && x.trim().length > 0)) {
+    problems.push("executiveSummary contains a non-string or blank entry");
+  }
+
+  return problems;
+}
 
 export interface GeneratedIssue {
   title: string;

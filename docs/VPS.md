@@ -129,7 +129,8 @@ running.
 | `PUBLISHER_PRIVATE_KEY` | The hot key. Publishes and nothing else. |
 | `NEXT_PUBLIC_SYNDIX_PUBLISHER` | The guard contract it calls. |
 | `NEXT_PUBLIC_SYNDIX_TREASURY` | Read for treasury state and the last snapshot. |
-| `OPENAI_API_KEY` | Writing the issue. |
+| `ZG_API_KEY` | Writing the issue, via the 0G Compute Router. |
+| `SYNDIX_MODEL` | Optional; defaults to `glm-5.2`. Must support `response_format`. |
 | `PINATA_JWT` | Pinning the body. |
 | `PINATA_GATEWAY` | Reading the last issue's snapshot quickly. |
 | `SYNDIX_TRACK` | Optional; defaults to `giwa-l2`. |

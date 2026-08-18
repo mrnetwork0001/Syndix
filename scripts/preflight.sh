@@ -98,7 +98,7 @@ fi
 
 head_ "Reachability"
 
-for host in sepolia-rpc-flashblocks.giwa.io api.openai.com api.pinata.cloud; do
+for host in sepolia-rpc-flashblocks.giwa.io router-api.0g.ai api.pinata.cloud; do
   if curl -sS -o /dev/null -m 12 "https://$host" 2>/dev/null; then
     ok "https://$host reachable"
   else
@@ -123,9 +123,27 @@ if [ -f .env.local ]; then
   fi
 
   for key in PUBLISHER_PRIVATE_KEY NEXT_PUBLIC_SYNDIX_PUBLISHER \
-             NEXT_PUBLIC_SYNDIX_TREASURY OPENAI_API_KEY PINATA_JWT; do
+             NEXT_PUBLIC_SYNDIX_TREASURY PINATA_JWT; do
     grep -qE "^${key}=." .env.local 2>/dev/null && ok "$key set" || bad "$key missing"
   done
+
+  # Either inference provider will do, but one of them has to be configured.
+  if grep -qE '^ZG_API_KEY=.' .env.local 2>/dev/null; then
+    ok "ZG_API_KEY set (generating via 0G Compute)"
+    MODEL="$(grep -E '^SYNDIX_MODEL=' .env.local 2>/dev/null | cut -d= -f2- | tr -d '"'"'"'[:space:]')"
+    MODEL="${MODEL:-glm-5.2}"
+    case "$MODEL" in
+      gpt-*|claude-*|minimax-*|kimi-k2*)
+        bad "SYNDIX_MODEL=$MODEL does not support response_format on the router."
+        bad "Issue generation requires it. Use glm-5.2, deepseek-v4-pro or qwen3.8-max." ;;
+      *)
+        ok "SYNDIX_MODEL=$MODEL" ;;
+    esac
+  elif grep -qE '^OPENAI_API_KEY=.' .env.local 2>/dev/null; then
+    warn "Falling back to OPENAI_API_KEY - set ZG_API_KEY to use 0G Compute"
+  else
+    bad "Neither ZG_API_KEY nor OPENAI_API_KEY is set - nothing can generate"
+  fi
 else
   warn ".env.local not found - copy .env.example and fill it in"
 fi

@@ -41,9 +41,12 @@ import { buildIssueUserPrompt } from "../lib/issue-prompt";
 import {
   ISSUE_JSON_SCHEMA,
   SYSTEM_PROMPT,
-  hasOpenAIKey,
-  openaiClient,
-  openaiModel,
+  hasInferenceKey,
+  inferenceClient,
+  inferenceModel,
+  inferenceProviderLabel,
+  assertModelSupported,
+  validateGeneratedIssue,
   type GeneratedIssue,
 } from "../lib/openai";
 import { hasPinataKey, pinIssueMetadata } from "../lib/ipfs";
@@ -201,34 +204,62 @@ async function main() {
   /*  4. Generate                                                      */
   /* ---------------------------------------------------------------- */
 
-  if (!hasOpenAIKey()) die("generate", "OPENAI_API_KEY is not set");
+  if (!hasInferenceKey()) die("generate", "OPENAI_API_KEY is not set");
 
   const track = (process.env.SYNDIX_TRACK ?? "giwa-l2") as TrackId;
   const trackLabel = TRACKS.find((t) => t.id === track)?.label ?? track;
 
-  log("generate", `dispatching to ${openaiModel()} for "${trackLabel}"`);
-  const completion = await openaiClient().chat.completions.create({
-    model: openaiModel(),
-    response_format: { type: "json_schema", json_schema: ISSUE_JSON_SCHEMA },
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: buildIssueUserPrompt(trackLabel, telemetry) },
-    ],
-  });
+  // Wrong model here means a parse failure one paid request later, and it
+  // reads like the model being bad at JSON rather than never having been
+  // asked for JSON in a way it understands.
+  assertModelSupported();
 
-  const finish = completion.choices[0]?.finish_reason;
-  if (finish && finish !== "stop") {
-    die("generate", `stopped early (finish_reason: ${finish})`);
-  }
-  const raw = completion.choices[0]?.message?.content;
-  if (!raw) die("generate", "model returned no content");
+  log("generate", `dispatching to ${inferenceProviderLabel()} for "${trackLabel}"`);
 
-  let issue: GeneratedIssue;
-  try {
-    issue = JSON.parse(raw) as GeneratedIssue;
-  } catch {
-    die("generate", "model returned invalid JSON");
+  const messages = [
+    { role: "system" as const, content: SYSTEM_PROMPT },
+    { role: "user" as const, content: buildIssueUserPrompt(trackLabel, telemetry) },
+  ];
+
+  // Two attempts. One bad response is worth retrying; two means something is
+  // wrong with the model or the prompt, and publishing a malformed issue is
+  // permanent in a way that skipping a day is not.
+  let issue: GeneratedIssue | null = null;
+  for (let attempt = 1; attempt <= 2 && !issue; attempt++) {
+    const completion = await inferenceClient().chat.completions.create({
+      model: inferenceModel(),
+      response_format: { type: "json_schema", json_schema: ISSUE_JSON_SCHEMA },
+      messages,
+    });
+
+    const finish = completion.choices[0]?.finish_reason;
+    if (finish && finish !== "stop") {
+      log("generate", `attempt ${attempt} stopped early (${finish})`);
+      continue;
+    }
+    const raw = completion.choices[0]?.message?.content;
+    if (!raw) {
+      log("generate", `attempt ${attempt} returned no content`);
+      continue;
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      log("generate", `attempt ${attempt} returned invalid JSON`);
+      continue;
+    }
+
+    const problems = validateGeneratedIssue(parsed);
+    if (problems.length > 0) {
+      log("generate", `attempt ${attempt} failed validation: ${problems.join("; ")}`);
+      continue;
+    }
+    issue = parsed as GeneratedIssue;
   }
+
+  if (!issue) die("generate", "no usable issue after 2 attempts; skipping rather than publishing a malformed one");
   log("generate", `"${issue.title}" (${issue.body.length} chars)`);
 
   if (DRY_RUN) {
@@ -253,7 +284,11 @@ async function main() {
       { trait_type: "Track", value: track },
       { trait_type: "Sentiment", value: issue.sentiment },
       { trait_type: "Engagement index", value: issue.engagementIndex },
-      { trait_type: "Model", value: openaiModel() },
+      { trait_type: "Model", value: inferenceModel() },
+              // Which network actually ran the inference. The 0G
+              // default is TEE-attested, so this is a claim that can
+              // be checked rather than one that must be believed.
+              { trait_type: "Inference", value: inferenceProviderLabel() },
       { trait_type: "Published by", value: "autonomous cycle" },
       ...(telemetry.blockNumber
         ? [{ trait_type: "Scanned at block", value: telemetry.blockNumber }]
