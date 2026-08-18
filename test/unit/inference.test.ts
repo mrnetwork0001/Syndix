@@ -101,6 +101,22 @@ describe("model selection", () => {
     expect(() => assertModelSupported()).not.toThrow();
   });
 
+  it("ignores OPENAI_MODEL when routing through 0G", async () => {
+    const { inferenceModel } = await import("@/lib/inference");
+    // A leftover OPENAI_MODEL from before the switch names a model that does
+    // not exist on the router, and sending it there fails at request time.
+    process.env.ZG_API_KEY = "test";
+    process.env.OPENAI_MODEL = "gpt-4.1";
+    expect(inferenceModel()).toBe("glm-5.2");
+  });
+
+  it("still honours OPENAI_MODEL when talking to OpenAI", async () => {
+    const { inferenceModel } = await import("@/lib/inference");
+    process.env.OPENAI_API_KEY = "test";
+    process.env.OPENAI_MODEL = "gpt-4.1";
+    expect(inferenceModel()).toBe("gpt-4.1");
+  });
+
   it("picks the provider from whichever key is set", async () => {
     const { inferenceProvider, inferenceModel } = await import("@/lib/inference");
     process.env.OPENAI_API_KEY = "test";

@@ -96,9 +96,18 @@ export function inferenceProvider(): InferenceProvider {
 }
 
 export function inferenceModel(): string {
-  const override = process.env.SYNDIX_MODEL?.trim() || process.env.OPENAI_MODEL?.trim();
-  if (override) return override;
-  return inferenceProvider() === "0g" ? DEFAULT_MODEL : "gpt-4.1";
+  const explicit = process.env.SYNDIX_MODEL?.trim();
+  if (explicit) return explicit;
+
+  if (inferenceProvider() === "0g") {
+    // Deliberately NOT falling back to OPENAI_MODEL here. That variable names
+    // a model in OpenAI's catalogue, and an existing OPENAI_MODEL=gpt-4.1 left
+    // in a .env from before the switch would otherwise be sent to the 0G
+    // router, which has no such model. SYNDIX_MODEL is the only override that
+    // crosses providers.
+    return DEFAULT_MODEL;
+  }
+  return process.env.OPENAI_MODEL?.trim() || "gpt-4.1";
 }
 
 export function hasInferenceKey(): boolean {
