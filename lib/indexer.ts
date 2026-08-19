@@ -35,7 +35,22 @@ const BLOCKS_PER_DAY = 86_400n;
  * How many days of history to reconstruct. Kept modest because each day is a
  * large block range and the public RPC caps `eth_getLogs` spans.
  */
-export const INDEX_WINDOW_DAYS = 14;
+/**
+ * Days of history the chart covers.
+ *
+ * Seven, not fourteen, because the window is what the scan costs. Each day is
+ * 86,400 blocks and getLogs is capped at 45,000 per call, so fourteen days is
+ * twenty-seven round trips against a public RPC - measured at 31s for the logs
+ * alone, and 57s for a full cold scan including block timestamps. The page
+ * allows 60s. On Vercel, where every cold instance starts with an empty cache
+ * and the network is not this machine's, that budget was not being met and the
+ * panel rendered its unavailable state instead of a chart.
+ *
+ * Seven days is fourteen chunks and 6.9s of logs. It costs one event of
+ * history: over the same window a fourteen-day scan finds 34 and a seven-day
+ * scan finds 33. Eleven of the fourteen days were empty anyway.
+ */
+export const INDEX_WINDOW_DAYS = 7;
 
 /** Chunk size for getLogs. The public RPC rejects very wide ranges. */
 /**
@@ -282,19 +297,55 @@ async function computeProtocolSeries(): Promise<IndexResult> {
       })),
     );
 
-    // Only fetch timestamps for blocks that actually produced an event.
+    /**
+     * Timestamps, derived rather than fetched.
+     *
+     * GIWA is OP Stack with a fixed one-second block time, so a block's
+     * timestamp is the head's minus the number of blocks between them. Checked
+     * across a full seven-day window at offsets of 1, 1k, 50k, 200k, 400k and
+     * 604,800 blocks: drift was zero seconds at every one.
+     *
+     * This matters because fetching them was the slowest part of the whole
+     * scan. Forty-eight event blocks took 24 seconds - the RPC serialises
+     * getBlock at roughly half a second each and batching does not help - while
+     * the logs themselves took under seven.
+     *
+     * Verified once per scan rather than trusted. One block is fetched and
+     * compared; if the chain ever stops producing at 1s the derivation is
+     * abandoned and the timestamps are read properly, because silently
+     * misfiling events into the wrong UTC day is worse than a slow chart.
+     */
     const blocks = [
       ...new Set(
         [...scannedClaims, ...scannedPublishes].map((e) => e.blockNumber),
       ),
     ];
-    const fetched = await Promise.all(
-      blocks.map(async (blockNumber) => {
-        const block = await client.getBlock({ blockNumber });
-        return [blockNumber, Number(block.timestamp)] as const;
-      }),
+
+    const headForTime = await client.getBlock({ blockNumber: head });
+    const headSeconds = Number(headForTime.timestamp);
+    const derive = (b: bigint) => headSeconds - Number(head - b);
+
+    let derivable = true;
+    if (blocks.length > 0) {
+      const probe = blocks[Math.floor(blocks.length / 2)];
+      try {
+        const actual = Number((await client.getBlock({ blockNumber: probe })).timestamp);
+        derivable = Math.abs(actual - derive(probe)) <= 60;
+      } catch {
+        derivable = false;
+      }
+    }
+
+    const timestamps = new Map<bigint, number>(
+      derivable
+        ? blocks.map((b) => [b, derive(b)] as const)
+        : await Promise.all(
+            blocks.map(async (blockNumber) => {
+              const block = await client.getBlock({ blockNumber });
+              return [blockNumber, Number(block.timestamp)] as const;
+            }),
+          ),
     );
-    const timestamps = new Map<bigint, number>(fetched);
 
     // Stamp each event so a later scan never re-reads these blocks.
     const stamp = (e: {
@@ -322,8 +373,8 @@ async function computeProtocolSeries(): Promise<IndexResult> {
 
     // Seed every day in the window so the chart has no gaps.
     const buckets = new Map<string, DailyPoint>();
-    const headBlock = await client.getBlock({ blockNumber: head });
-    const headSeconds = Number(headBlock.timestamp);
+    // headSeconds is already read above for the timestamp derivation - the head
+    // block was being fetched twice.
     for (let i = INDEX_WINDOW_DAYS - 1; i >= 0; i--) {
       const date = utcDay(headSeconds - i * 86_400);
       buckets.set(date, {
