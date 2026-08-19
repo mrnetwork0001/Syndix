@@ -8,7 +8,7 @@ import { readOnchainIssues } from "@/lib/onchain-issues";
 import { readPublishIndex } from "@/lib/publish-tx";
 import { toRenderableIssues } from "@/lib/issue-adapter";
 import { INDEX_WINDOW_DAYS, indexProtocolSeries } from "@/lib/indexer";
-import { MIN_DWELL_SECONDS } from "@/lib/attest";
+import { readMinSeconds } from "@/lib/read-session";
 import { Hero } from "@/components/feed/hero";
 import { HowItWorks } from "@/components/feed/how-it-works";
 import { StatRow } from "@/components/feed/stat-row";
@@ -87,7 +87,7 @@ export default async function Home(): Promise<ReactElement> {
       <Reveal className="mt-16">
         <HowItWorks
           rewardPerReaderWei={active[0]?.rewardPerReaderWei}
-          minDwellSeconds={MIN_DWELL_SECONDS}
+          minDwellSeconds={readMinSeconds()}
           claimsRemaining={claimsRemaining}
         />
       </Reveal>

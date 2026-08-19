@@ -8,7 +8,16 @@ import { cn, formatEth, formatUsd } from "@/lib/utils";
 export interface HowItWorksProps {
   /** `rewardPerReader` from the newest article, in wei. */
   rewardPerReaderWei?: string;
-  /** `minDwellSeconds` from the treasury - the contract rejects anything shorter. */
+  /**
+   * Seconds a reader must actually stay, from READ_MIN_SECONDS.
+   *
+   * This is the server threshold, NOT SyndixTreasury.minDwellSeconds. The two
+   * are far apart - the contract floor is 20 seconds and exists to limit a
+   * compromised attester, while the gate a reader meets is currently 300 - and
+   * this panel used to show the contract value. It told people to read for
+   * twenty seconds and then refused the claim, which is the worst combination
+   * of wrong: precise, prominent, and actionable.
+   */
   minDwellSeconds: number;
   /** Claims still funded across every active article. */
   claimsRemaining?: number;
@@ -29,6 +38,18 @@ export interface HowItWorksProps {
  * Syndix, and pretending otherwise would be the exact overclaim the honesty rule
  * exists to prevent.
  */
+/**
+ * Renders a dwell requirement the way a person would say it.
+ *
+ * "Read for 300s" is technically correct and reads like a machine. Anything
+ * from two minutes up becomes minutes; below that seconds are clearer.
+ */
+function readableDwell(seconds: number): string {
+  if (seconds < 120) return `${seconds}s`;
+  const minutes = seconds / 60;
+  return Number.isInteger(minutes) ? `${minutes} min` : `${minutes.toFixed(1)} min`;
+}
+
 export function HowItWorks({
   rewardPerReaderWei,
   minDwellSeconds,
@@ -65,12 +86,15 @@ export function HowItWorks({
     },
     {
       icon: Timer,
-      label: `Read for ${minDwellSeconds}s`,
+      label: `Read for ${readableDwell(minDwellSeconds)}`,
       body: (
         <>
-          Open any issue and read it. Past{" "}
-          <Mono className="text-[11.5px] text-ink-muted">{`${minDwellSeconds}s`}</Mono>{" "}
-          the attester signs an EIP-712 proof of your dwell time. It is a
+          Open any issue and read it. The page has to stay open and scrolled
+          through for{" "}
+          <Mono className="text-[11.5px] text-ink-muted">
+            {readableDwell(minDwellSeconds)}
+          </Mono>{" "}
+          before the attester signs an EIP-712 proof of your dwell time. It is a
           signature, not an approval - no human reviews your claim.
         </>
       ),

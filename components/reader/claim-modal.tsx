@@ -69,7 +69,14 @@ import {
  * showing this constant as "the minimum" told readers 15s when the server
  * wanted five minutes.
  */
-const CONTRACT_MIN_DWELL_SECONDS = 15;
+/**
+ * No invented fallback for the dwell requirement.
+ *
+ * This was 15, which matched nothing: the contract floor is 20 and the server
+ * gate is currently 300. Showing a made-up number while the session loads told
+ * readers they needed a quarter of the real time. The requirement comes from
+ * the session response or it is not shown.
+ */
 
 const PRECONFIRM_MS = 187;
 const SEAL_MS = 1010;
@@ -692,7 +699,7 @@ export function ClaimModal({
                   {dwellSeconds}s dwell
                 </Badge>
                 <span className="font-mono text-[11px] tabular-nums text-ink-faint">
-                  min {session.requiredSeconds || CONTRACT_MIN_DWELL_SECONDS}s
+                  {session.requiredSeconds ? `min ${session.requiredSeconds}s` : "min -"}
                 </span>
                 {session.requiredDepth < 1 ? (
                   <Badge tone={session.depth >= session.requiredDepth ? "positive" : "caution"}>
