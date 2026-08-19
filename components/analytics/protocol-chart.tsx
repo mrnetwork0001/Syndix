@@ -52,8 +52,18 @@ function shortDate(iso: string): string {
 
 export function ProtocolChart({
   series,
+  indexed = true,
 }: {
   series: DailyPoint[];
+  /**
+   * Whether `series` came from chain events.
+   *
+   * Passed in rather than inferred. This label used to key off IS_LIVE_CHAIN,
+   * which only says a treasury address is configured - so when indexing failed
+   * and the page substituted an authored series, the chart still announced
+   * "Indexed from GIWA Sepolia" directly beneath a badge reading "not indexed".
+   */
+  indexed?: boolean;
 }): ReactElement {
   const byDate = useMemo(() => {
     const map = new Map<string, DailyPoint>();
@@ -95,7 +105,11 @@ export function ProtocolChart({
         <LegendKey color={ACCENT_LIFT} label="Reward claims" />
         <LegendKey color={CYAN} label="Active wallets" dashed />
         <span className="ml-auto text-[11px] tracking-[0.12em] text-ink-faint uppercase">
-          {IS_LIVE_CHAIN ? "Indexed from GIWA Sepolia" : "Simulated series"}
+          {!IS_LIVE_CHAIN
+            ? "Simulated series"
+            : indexed
+              ? "Indexed from GIWA Sepolia"
+              : "Not indexed"}
         </span>
       </div>
 

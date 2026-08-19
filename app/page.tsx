@@ -120,7 +120,7 @@ export default async function Home(): Promise<ReactElement> {
             <p className="mt-1.5 text-sm text-ink-muted">
               {indexed.ok
                 ? `Reward claims and distinct claiming wallets per UTC day, reconstructed from RewardClaimed events over the last ${INDEX_WINDOW_DAYS} days (blocks ${indexed.fromBlock}–${indexed.toBlock}). The treasury split beside it is read from the contract.`
-                : "Reward claims per day. The chain event log could not be read this request, so the chart falls back to an authored projection; the treasury split beside it is still read from the contract."}
+                : "Reward claims per day, reconstructed from RewardClaimed events. The chain event log could not be read this request, so there is no series to show; the treasury split beside it is still read from the contract."}
             </p>
           </div>
           {indexed.ok ? (
@@ -129,13 +129,42 @@ export default async function Home(): Promise<ReactElement> {
             </Badge>
           ) : (
             <Badge tone="caution" icon={TriangleAlert}>
-              Series is illustrative · not indexed
+              Chart unavailable · event log unreadable
             </Badge>
           )}
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-          <ProtocolChart series={indexed.ok ? indexed.points : PROTOCOL_STATS.series} />
+          {/*
+            No fallback series.
+            
+            This used to render PROTOCOL_STATS.series when indexing failed - an
+            authored dataset showing roughly a thousand claims a day against a
+            real total of fifty-two. It carried a badge, but a reader takes the
+            shape of a chart in before they read the label above it, and the
+            shape was a fabrication. An empty panel says less and claims
+            nothing.
+          */}
+          {indexed.ok ? (
+            <ProtocolChart series={indexed.points} indexed />
+          ) : (
+            <div className="panel flex min-h-[300px] flex-col items-center justify-center gap-2 px-6 text-center">
+              <TriangleAlert className="size-5 text-ink-faint" aria-hidden />
+              <p className="text-sm text-ink-muted">
+                The claim history could not be read from GIWA this request.
+              </p>
+              <p className="max-w-sm text-[13px] text-ink-faint">
+                Nothing is shown rather than an estimate. The treasury figures
+                beside this are read straight from the contract and are
+                unaffected.
+              </p>
+              {indexed.reason ? (
+                <p className="mt-1 max-w-md font-mono text-[11px] break-words text-ink-faint/70">
+                  {indexed.reason.split("\n")[0]}
+                </p>
+              ) : null}
+            </div>
+          )}
           <TreasuryGauge stats={treasuryStats} />
         </div>
         </section>

@@ -218,22 +218,42 @@ async function computeProtocolSeries(): Promise<IndexResult> {
      * rather than a missing one - the caller is better served by an honest
      * failure it can label.
      */
+    /**
+     * One chunk, retried.
+     *
+     * A fourteen-day window is roughly thirty getLogs calls, so a per-call
+     * failure rate that would be tolerable once is near-certain across a scan.
+     * GIWA answers "no backend is currently healthy to serve traffic"
+     * intermittently and then serves the identical request a second later, and
+     * without a retry that single blip failed the whole scan - which is how the
+     * feed ended up rendering a fallback series instead of the chain.
+     */
     const scanRange = async ({ start, end }: { start: bigint; end: bigint }) => {
-      const [claimLogs, publishLogs] = await Promise.all([
-        client.getLogs({
-          address: SYNDIX_CONTRACTS.treasury,
-          event: REWARD_CLAIMED,
-          fromBlock: start,
-          toBlock: end,
-        }),
-        client.getLogs({
-          address: SYNDIX_CONTRACTS.treasury,
-          event: ARTICLE_PUBLISHED,
-          fromBlock: start,
-          toBlock: end,
-        }),
-      ]);
-      return { claimLogs, publishLogs };
+      let lastError: unknown;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          // Both event types in ONE request. This was two calls per chunk,
+          // which doubled the slowest part of the scan for no reason - the
+          // node filters on topic0 either way, and a fourteen-day window is
+          // twenty-seven chunks, so the saving is twenty-seven round trips.
+          const logs = await client.getLogs({
+            address: SYNDIX_CONTRACTS.treasury,
+            events: [REWARD_CLAIMED, ARTICLE_PUBLISHED],
+            fromBlock: start,
+            toBlock: end,
+          });
+          return {
+            claimLogs: logs.filter((l) => l.eventName === "RewardClaimed"),
+            publishLogs: logs.filter((l) => l.eventName === "ArticlePublished"),
+          };
+        } catch (error) {
+          lastError = error;
+          // Short, growing backoff. The failure is a momentarily unhealthy
+          // backend, not a rate limit, so it clears quickly.
+          await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+        }
+      }
+      throw lastError;
     };
 
     const perRange: Awaited<ReturnType<typeof scanRange>>[] = [];
