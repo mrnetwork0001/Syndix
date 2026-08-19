@@ -95,10 +95,14 @@ the real, ecosystem-wide Upbit Web3 Names registry**
 ([`0x091D...9628`](https://sepolia-explorer.giwa.io/address/0x091D00004f21eb2Fc30964A8a4995692d9b49628)),
 not on anything Syndix can mint.
 
-**Current state:** 10 articles published all-time, 6 retired, **4 live** with 20 funded
-claims each. Three wallets have claimed. The first real claim, attested by `/api/attest`
-and submitted by the reader, is
+**Current state**, read from the treasury on 19 August 2026: 11 articles published
+all-time, 6 retired, **5 live**. **73 distinct wallets have claimed**, across 84 claims
+totalling 0.00252 ETH. The first real claim, attested by `/api/attest` and submitted by
+the reader, is
 [`0x49eb506b...78502a`](https://sepolia-explorer.giwa.io/tx/0x49eb506b106fb83433a68324551139d68227767016671ae7fce89b704978502a).
+
+These figures go stale. `uniqueReaders()` and `articleCount()` on the treasury are the
+live answer, and `/api/stats` returns both.
 
 **The app bundles no article content.** `lib/onchain-issues.ts` reads `articleCount` and
 `listArticles()` from the treasury and fetches each body from IPFS. Delete the contracts
@@ -232,7 +236,14 @@ and pay about 0.00000018 ETH; the paymaster is standing infrastructure.
 
 ## Sustainability: how this pays for itself
 
-**Written and tested, not deployed.**
+**Deployed and exercised.** `SyndixSponsorship`
+[`0xC853Eaef...A256a`](https://sepolia-explorer.giwa.io/address/0xC853Eaef43Fa30FBB990F13cb3fCaea2A00A256a),
+verified on the explorer. A live 0.0001 ETH sponsorship split exactly 80/20, and
+`fundTreasury` moved the reader share into the treasury where only readers can reach it -
+unreserved rose by precisely the committed amount and the fee balance did not move.
+
+That proves the mechanism, not the business: the only deposit so far came from the
+operator, and external revenue is still zero.
 
 Today the treasury is a subsidy. Every wei in it came from us, and at the
 current reward it funds a few dozen more claims. That is fine for a testnet MVP
@@ -315,7 +326,16 @@ the runway to build one.
 
 ## SyndixPublisher
 
-**Written and tested, not deployed.** The path to an unattended newsroom.
+**Deployed, and it owns the treasury.**
+[`0xb542E132...0824`](https://sepolia-explorer.giwa.io/address/0xb542E132e43149E99bef100654Dbe9e079470824).
+`SyndixTreasury.owner()` is this contract, not a wallet, so publishing runs under caps
+enforced onchain: 0.001 ETH per issue and 1 issue per day. The escape hatch was tested
+before anything depended on it - ownership moved to the guard, `recoverTreasuryOwnership`
+returned it in one transaction, and it was then handed over for real.
+
+Seven attack paths were attempted from the publishing key and all seven reverted: drain
+the guard, recover treasury ownership, raise its own caps, exceed the daily cap, publish
+over the pool cap, call `publishArticle` directly, withdraw from the treasury.
 
 Scanning, generation and pinning already run server-side with no human in them. The one
 manual step is the owner signing `publishArticle`, and scheduling that means putting a key
@@ -489,8 +509,8 @@ Stated plainly, because a grant reviewer should not have to guess:
 | IPFS pinning | **Real.** Pinned through Pinata on publish; publishing aborts if pinning fails, so no article is indexed with an unresolvable CID. |
 | Analytics time series | **Real.** Daily buckets reconstructed from `RewardClaimed` and `ArticlePublished` logs. Empty days render empty rather than interpolated. |
 | x402 endpoint | **Real 402 flow and real onchain verification, custom scheme.** The challenge follows x402's shape and settlement is checked against the receipt, but the scheme is `giwa-native-transfer`, not x402's `exact` - `exact` requires an EIP-3009 authorisation, which native ETH cannot carry, and ERC-20 rails do not meaningfully exist on GIWA Sepolia yet. Without a treasury set it accepts a well-formed hash and returns `verification: "accepted-unverified"`. |
-| Sponsorship revenue | **Contract written and tested, not deployed.** `SyndixSponsorship` splits each deposit into a capped protocol fee and a reader-committed remainder that no owner function can reach. To date the treasury is 100% self-funded and external revenue is zero. |
-| Autonomous publishing | **Not built.** Writing is autonomous; publishing needs an owner signature. `SyndixPublisher` is written and tested but not deployed. |
+| Sponsorship revenue | **Contract real, revenue zero.** `SyndixSponsorship` is deployed and verified, and a live deposit split 80/20 with the reader share forwarded into the treasury. Every deposit so far came from the operator, so the treasury remains 100% self-funded and external revenue is zero. |
+| Autonomous publishing | **Guard deployed, scheduler not running.** `SyndixPublisher` owns the treasury and caps publishing at 0.001 ETH and one issue per day, enforced onchain. A hot key can call `publish` and nothing else - seven other attempts revert. The cycle that decides when to publish exists and runs on demand, but no timer is installed, so every issue to date was triggered by a human. |
 | ERC-4337 gasless | **Paymaster real, sponsorship not reachable.** Deployed, staked and funded, sponsoring only `claimReaderReward`, but GIWA Sepolia has no bundler serving 91342 and no smart-account factory, so readers pay their own gas. |
 | KRW denomination | **Not deployed.** `SyndixStableTreasury` is written and tested against a mock; GIWA's KRW stablecoin does not exist yet. |
 

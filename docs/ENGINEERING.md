@@ -90,7 +90,7 @@ lib/
   data/       the editorial dataset (issues, protocol stats, agent run script)
 contracts/    SyndixTreasury.sol, SyndixArticleNFT.sol, SyndixPaymaster.sol,
               UpIdReaderRegistry.sol, SyndixStableTreasury.sol (KRW variant) and
-              SyndixPublisher.sol (autonomy guard) - neither deployed, mocks/, interfaces/
+              SyndixPublisher.sol (autonomy guard) - both deployed, mocks/, interfaces/
 test/contracts/  Foundry tests
 script/Deploy.s.sol
 ```
